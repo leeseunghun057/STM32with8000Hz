@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="false"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<item key="selection" value="LastTimer"/>
+		<list key="findhistory">
+			<item value="LastTimer"/>
+			<item value="LastTimer2"/>
+			<item value="fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"/>
+			<item value="pin_to_matrix_state_loop"/>
+			<item value="pin_to_matrix_state_loop_unrolled_4x"/>
+			<item value="LastMatrixState"/>
+			<item value="Keycode[i]"/>
+			<item value="KeyCode"/>
+		</list>
+		<list key="replacehistory">
+			<item value="Keycode[LayerState][i]"/>
+			<item value="Keycode"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="1567"/>
+		<item key="DIALOG_Y_ORIGIN" value="468"/>
+		<item key="DIALOG_WIDTH" value="322"/>
+		<item key="DIALOG_HEIGHT" value="391"/>
+		<item key="DIALOG_FONT_NAME" value="1|맑은 고딕|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|맑은 고딕"/>
+	</section>
+</section>

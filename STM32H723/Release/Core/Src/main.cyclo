@@ -1,0 +1,10 @@
+../Core/Src/main.c:155:5:MatrixScan	4
+../Core/Src/main.c:173:6:SetKeycode	31
+../Core/Src/main.c:201:6:ResetKeycode	7
+../Core/Src/main.c:229:6:KeycodeSend	1
+../Core/Src/main.c:238:6:PressKeycodes	7
+../Core/Src/main.c:290:6:ReleaseKeycodes	18
+../Core/Src/main.c:345:6:CheckScanrate	2
+../Core/Src/main.c:452:6:SystemClock_Config	4
+../Core/Src/main.c:369:5:main	14
+../Core/Src/main.c:672:6:Error_Handler	1

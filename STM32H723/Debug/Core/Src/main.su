@@ -1,0 +1,14 @@
+../Core/Src/main.c:155:5:MatrixScan	24	static
+../Core/Src/main.c:173:6:SetKeycode	16	static
+../Core/Src/main.c:201:6:ResetKeycode	16	static
+../Core/Src/main.c:229:6:KeycodeSend	112	static
+../Core/Src/main.c:238:6:PressKeycodes	120	static
+../Core/Src/main.c:290:6:ReleaseKeycodes	120	static
+../Core/Src/main.c:345:6:CheckScanrate	112	static
+../Core/Src/main.c:369:5:main	112	static
+../Core/Src/main.c:452:6:SystemClock_Config	120	static
+../Core/Src/main.c:512:13:MX_UART4_Init	8	static
+../Core/Src/main.c:559:13:MX_UART5_Init	8	static
+../Core/Src/main.c:606:13:MX_GPIO_Init	48	static
+../Core/Src/main.c:642:6:MPU_Config	24	static
+../Core/Src/main.c:672:6:Error_Handler	4	static,ignoring_inline_asm
