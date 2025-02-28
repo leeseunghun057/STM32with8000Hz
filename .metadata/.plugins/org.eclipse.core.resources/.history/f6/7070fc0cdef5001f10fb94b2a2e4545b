@@ -144,8 +144,8 @@ extern "C" {
 
 #define GPIOD0_0   KC_A + HOLDTAP_SHIFTING
 #define GPIOD1_0   KC_B
-#define GPIOD2_0   KC_C
-#define GPIOD3_0   KC_D
+#define GPIOD2_0   0
+#define GPIOD3_0   0
 #define GPIOD4_0   0
 #define GPIOD5_0   0
 #define GPIOD6_0   0
@@ -230,8 +230,8 @@ extern "C" {
 #define GPIOC15_1  0
 
 #define GPIOD0_1   KC_C
-#define GPIOD1_1   KC_E
-#define GPIOD2_1   KC_F
+#define GPIOD1_1   0
+#define GPIOD2_1   0
 #define GPIOD3_1   0
 #define GPIOD4_1   0
 #define GPIOD5_1   0

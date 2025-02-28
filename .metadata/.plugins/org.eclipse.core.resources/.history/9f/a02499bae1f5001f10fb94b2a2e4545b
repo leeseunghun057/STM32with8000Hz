@@ -413,24 +413,21 @@ MatrixScanResult MatrixScan() {
 
     // 이전 상태 업데이트
 
-    Last_gpioA_state = gpioA_state;
-    Last_gpioB_state = gpioB_state;
-    Last_gpioC_state = gpioC_state;
-    Last_gpioD_state = gpioD_state;
-    Last_gpioE_state = gpioE_state;
-    Last_gpioF_state = gpioF_state;
-    Last_gpioG_state = gpioG_state;
-    Last_gpioH_state = gpioH_state;
+
 
 
 
     if ( HAL_GetTick() - DebounceTimer[result.pinNumber] > DEBOUNCE_TIME)
     {
-
+        Last_gpioA_state = gpioA_state;
+        Last_gpioB_state = gpioB_state;
+        Last_gpioC_state = gpioC_state;
+        Last_gpioD_state = gpioD_state;
+        Last_gpioE_state = gpioE_state;
+        Last_gpioF_state = gpioF_state;
+        Last_gpioG_state = gpioG_state;
+        Last_gpioH_state = gpioH_state;
         // Last_gpioI_state = gpioI_state;
-
-        DebounceTimer[result.pinNumber] = HAL_GetTick();
-
 
     	return result;
     }

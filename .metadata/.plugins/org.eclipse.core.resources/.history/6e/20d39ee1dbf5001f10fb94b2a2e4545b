@@ -65,7 +65,7 @@ HID_SendKeycode keyboardReport = {0};
 /* USER CODE BEGIN PD */
 #define KEY_NUMBER 100
 #define HOLD_TIME 250 // (ms)
-#define DEBOUNCE_TIME 1000 // (ms)
+#define DEBOUNCE_TIME 100 // (ms)
 #define TAP_DELAY 50 // (us)
 
 // Keycode are in main.h
@@ -155,7 +155,7 @@ char UART_message[100];
 
 int KeyTimer = 0;
 
-int DebounceTimer[] = { 0 };
+int DebounceTimer[KEY_NUMBER] = { 0 };
 
 uint32_t gpioA_state = 0; // GPIOA의 모든 핀 상태
 uint32_t gpioB_state = 0; // GPIOB의 모든 핀 상태
@@ -226,11 +226,11 @@ MatrixScanResult MatrixScan() {
     uint32_t gpioB_state = (~(GPIOB->IDR)) & 0b1100001111011100;
     uint32_t gpioC_state = (~(GPIOC->IDR)) & 0b1111111111110010;
     uint32_t gpioD_state = (~(GPIOD->IDR)) & 0b1111111111111111;
-    uint32_t gpioE_state = (~(GPIOE->IDR)) & 0b1111111111110111;
+    uint32_t gpioE_state = (~(GPIOE->IDR)) & 0b1111111111111111;
     uint32_t gpioF_state = (~(GPIOF->IDR)) & 0b1111111111111111;
     uint32_t gpioG_state = (~(GPIOG->IDR)) & 0b1111111111111111;
     uint32_t gpioH_state = (~(GPIOH->IDR)) & 0b1111111111111100;
-    //uint32_t gpioI_state = (-(GPIOI->IDR)) & 0b1111111111111111;
+    //uint32_t gpioI_state = (!(GPIOI->IDR)) & 1111111111111111;
 
 
     // 변경된 비트 계산 (XOR 연산)
@@ -249,9 +249,12 @@ MatrixScanResult MatrixScan() {
     result.pinState = -1;
 
 
-    //char message[100];
-    //sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-    //HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+    char message[100];
+    sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
+    HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//    char message2[100];
+  //  sprintf(message2, "A = %X | B = %X | C = %X | D = %X | E = %X \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
+    //HAL_UART_Transmit(&huart4, (uint8_t *)message2, strlen(message2), HAL_MAX_DELAY);
 
     // 포트 A~E 순서대로 변경된 핀 확인
     if (changedPinA != 0)
@@ -412,7 +415,6 @@ MatrixScanResult MatrixScan() {
 
 
     // 이전 상태 업데이트
-
     Last_gpioA_state = gpioA_state;
     Last_gpioB_state = gpioB_state;
     Last_gpioC_state = gpioC_state;
@@ -421,28 +423,9 @@ MatrixScanResult MatrixScan() {
     Last_gpioF_state = gpioF_state;
     Last_gpioG_state = gpioG_state;
     Last_gpioH_state = gpioH_state;
+    // Last_gpioI_state = gpioI_state;
 
-
-
-    if ( HAL_GetTick() - DebounceTimer[result.pinNumber] > DEBOUNCE_TIME)
-    {
-
-        // Last_gpioI_state = gpioI_state;
-
-        DebounceTimer[result.pinNumber] = HAL_GetTick();
-
-
-    	return result;
-    }
-    else
-    {
-        result.pinNumber = -1;
-        result.pinState = -1;
-        return result;
-    }
-
-
-
+    return result; // 변경된 핀 정보 반환
 }
 
 
@@ -714,24 +697,26 @@ int main(void)
         /*
         char message[100];
         sprintf(message, "pinNumber = %d | pinState =  %d \n\r", Matrix.pinNumber, Matrix.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); */
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+/*
 
 
 
-
-        if ( Matrix.pinNumber != -1 )
+        if ( Matrix.WhereIsOne != -1 )
         {
 
-			if ( Matrix.pinState == 1)
+			if ( Matrix.PinState == 1)
 			{
-				PressKeycodes(Matrix.pinNumber);
+				PressKeycodes(Matrix.WhereIsOne);
 			}
 			else
 			{
-				ReleaseKeycodes(Matrix.pinNumber);
+				ReleaseKeycodes(Matrix.WhereIsOne);
 			}
         	KeycodeSend();
-        }
+
+        	Timer++;
+        } */
 
     /* USER CODE END WHILE */
 

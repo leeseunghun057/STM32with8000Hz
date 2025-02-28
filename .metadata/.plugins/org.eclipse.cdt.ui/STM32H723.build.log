@@ -1,68 +1,31 @@
-22:55:18 **** Incremental Build of configuration Release for project STM32H723 ****
+23:40:24 **** Incremental Build of configuration Debug for project STM32H723 ****
 make -j12 all 
-arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m7 -std=gnu11 -DUSE_PWR_LDO_SUPPLY -DUSE_HAL_DRIVER -DSTM32H723xx -c -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I../USB_DEVICE/App -I../USB_DEVICE/Target -I../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc -Ofast -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
-../Core/Src/main.c: In function 'MatrixScan':
-../Core/Src/main.c:253:28: warning: format '%u' expects argument of type 'unsigned int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  253 |     sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-      |                           ~^                                            ~~~~~~~~~~~
-      |                            |                                            |
-      |                            unsigned int                                 uint32_t {aka long unsigned int}
-      |                           %lu
-../Core/Src/main.c:253:37: warning: format '%u' expects argument of type 'unsigned int', but argument 4 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  253 |     sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-      |                                    ~^                                               ~~~~~~~~~~~
-      |                                     |                                               |
-      |                                     unsigned int                                    uint32_t {aka long unsigned int}
-      |                                    %lu
-../Core/Src/main.c:253:46: warning: format '%u' expects argument of type 'unsigned int', but argument 5 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  253 |     sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-      |                                             ~^                                                  ~~~~~~~~~~~
-      |                                              |                                                  |
-      |                                              unsigned int                                       uint32_t {aka long unsigned int}
-      |                                             %lu
-../Core/Src/main.c:253:55: warning: format '%u' expects argument of type 'unsigned int', but argument 6 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  253 |     sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-      |                                                      ~^                                                     ~~~~~~~~~~~
-      |                                                       |                                                     |
-      |                                                       unsigned int                                          uint32_t {aka long unsigned int}
-      |                                                      %lu
-../Core/Src/main.c:253:64: warning: format '%u' expects argument of type 'unsigned int', but argument 7 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  253 |     sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-      |                                                               ~^                                                        ~~~~~~~~~~~
-      |                                                                |                                                        |
-      |                                                                unsigned int                                             uint32_t {aka long unsigned int}
-      |                                                               %lu
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m7 -std=gnu11 -g -DDEBUG -DUSE_PWR_LDO_SUPPLY -DUSE_HAL_DRIVER -DSTM32H723xx -c -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I../USB_DEVICE/App -I../USB_DEVICE/Target -I../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
 ../Core/Src/main.c: In function 'CheckScanrate':
-../Core/Src/main.c:614:39: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  614 |         sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
+../Core/Src/main.c:631:39: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
+  631 |         sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
       |                                      ~^                             ~~~~~~~~~~~~~
       |                                       |                             |
       |                                       int                           uint32_t {aka long unsigned int}
       |                                      %ld
 ../Core/Src/main.c: In function 'main':
-../Core/Src/main.c:677:43: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  677 |             sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
+../Core/Src/main.c:694:43: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
+  694 |             sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
       |                                          ~^                             ~~~~~~~~~~~~~
       |                                           |                             |
       |                                           int                           uint32_t {aka long unsigned int}
       |                                          %ld
-../Core/Src/main.c:701:1: warning: "/*" within comment [-Wcomment]
-  701 | /*
-      |  
-../Core/Src/main.c:689:26: warning: unused variable 'Matrix' [-Wunused-variable]
-  689 |         MatrixScanResult Matrix = MatrixScan();
-      |                          ^~~~~~
 arm-none-eabi-gcc -o "STM32H723.elf" @"objects.list"   -mcpu=cortex-m7 -T"C:\Users\leese\Music\STM32\STM32H723\STM32H723VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32H723.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 Finished building target: STM32H723.elf
  
 arm-none-eabi-size  STM32H723.elf 
 arm-none-eabi-objdump -h -S STM32H723.elf  > "STM32H723.list"
    text	   data	    bss	    dec	    hex	filename
-  30452	    360	   4608	  35420	   8a5c	STM32H723.elf
+  48784	    792	   5040	  54616	   d558	STM32H723.elf
 Finished building: default.size.stdout
  
 Finished building: STM32H723.list
  
 
-22:55:18 Build Finished. 0 errors, 9 warnings. (took 696ms)
+23:40:24 Build Finished. 0 errors, 2 warnings. (took 701ms)
 

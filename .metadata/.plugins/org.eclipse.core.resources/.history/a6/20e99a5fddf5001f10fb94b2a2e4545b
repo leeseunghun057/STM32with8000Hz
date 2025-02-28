@@ -65,7 +65,7 @@ HID_SendKeycode keyboardReport = {0};
 /* USER CODE BEGIN PD */
 #define KEY_NUMBER 100
 #define HOLD_TIME 250 // (ms)
-#define DEBOUNCE_TIME 1000 // (ms)
+#define DEBOUNCE_TIME 100 // (ms)
 #define TAP_DELAY 50 // (us)
 
 // Keycode are in main.h
@@ -155,7 +155,7 @@ char UART_message[100];
 
 int KeyTimer = 0;
 
-int DebounceTimer[] = { 0 };
+int DebounceTimer[KEY_NUMBER] = { 0 };
 
 uint32_t gpioA_state = 0; // GPIOA의 모든 핀 상태
 uint32_t gpioB_state = 0; // GPIOB의 모든 핀 상태
@@ -412,7 +412,6 @@ MatrixScanResult MatrixScan() {
 
 
     // 이전 상태 업데이트
-
     Last_gpioA_state = gpioA_state;
     Last_gpioB_state = gpioB_state;
     Last_gpioC_state = gpioC_state;
@@ -421,28 +420,9 @@ MatrixScanResult MatrixScan() {
     Last_gpioF_state = gpioF_state;
     Last_gpioG_state = gpioG_state;
     Last_gpioH_state = gpioH_state;
+    // Last_gpioI_state = gpioI_state;
 
-
-
-    if ( HAL_GetTick() - DebounceTimer[result.pinNumber] > DEBOUNCE_TIME)
-    {
-
-        // Last_gpioI_state = gpioI_state;
-
-        DebounceTimer[result.pinNumber] = HAL_GetTick();
-
-
-    	return result;
-    }
-    else
-    {
-        result.pinNumber = -1;
-        result.pinState = -1;
-        return result;
-    }
-
-
-
+    return result; // 변경된 핀 정보 반환
 }
 
 
@@ -731,6 +711,8 @@ int main(void)
 				ReleaseKeycodes(Matrix.pinNumber);
 			}
         	KeycodeSend();
+
+        	Timer++;
         }
 
     /* USER CODE END WHILE */

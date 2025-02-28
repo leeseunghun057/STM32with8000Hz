@@ -230,8 +230,8 @@ extern "C" {
 #define GPIOC15_1  0
 
 #define GPIOD0_1   KC_C
-#define GPIOD1_1   KC_E
-#define GPIOD2_1   KC_F
+#define GPIOD1_1   0
+#define GPIOD2_1   0
 #define GPIOD3_1   0
 #define GPIOD4_1   0
 #define GPIOD5_1   0

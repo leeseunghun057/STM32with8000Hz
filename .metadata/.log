@@ -1969,3 +1969,6 @@ Command-line arguments:  -os win32 -ws win32 -arch x86_64
 
 !ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2025-02-28 20:25:37.145
 !MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.cdt.core 1 0 2025-02-28 23:03:38.275
+!MESSAGE Indexed 'STM32H723' (34 sources, 135 headers) in 2.45 sec: 17,034 declarations; 101,755 references; 3 unresolved inclusions; 46 syntax errors; 171 unresolved names (0.14%)
