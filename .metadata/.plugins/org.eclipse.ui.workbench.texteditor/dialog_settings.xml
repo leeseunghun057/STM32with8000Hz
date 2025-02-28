@@ -6,8 +6,9 @@
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
-		<item key="selection" value="LastTimer"/>
+		<item key="selection" value="WhereIsZero"/>
 		<list key="findhistory">
+			<item value="WhereIsOne"/>
 			<item value="LastTimer"/>
 			<item value="LastTimer2"/>
 			<item value="fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"/>
@@ -18,6 +19,7 @@
 			<item value="KeyCode"/>
 		</list>
 		<list key="replacehistory">
+			<item value="WhereIsZero"/>
 			<item value="Keycode[LayerState][i]"/>
 			<item value="Keycode"/>
 		</list>
