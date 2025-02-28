@@ -45,13 +45,12 @@ typedef struct
     uint8_t Keycode6;
 } HID_SendKeycode;
 
+
+
 typedef struct {
-    int WhereIsOne;
-    int PinState;
+    int pinNumber;   // 변경된 핀 번호 (0 ~ 79, 포트 A~E 포함)
+    uint8_t pinState; // 핀의 현재 상태 (HIGH: 1, LOW: 0)
 } MatrixScanResult;
-
-
-
 
 
 
@@ -86,7 +85,7 @@ HID_SendKeycode keyboardReport = {0};
 
 
 
-
+#define EXCLUDE_PIN_A4 (1U << 4)
 
 
 
@@ -158,19 +157,23 @@ int KeyTimer = 0;
 
 int DebounceTimer[KEY_NUMBER] = { 0 };
 
-uint32_t gpioA_state; // GPIOA의 모든 핀 상태
-uint32_t gpioB_state; // GPIOB의 모든 핀 상태
-uint32_t gpioC_state; // GPIOC의 모든 핀 상태
-uint32_t gpioD_state; // GPIOD의 모든 핀 상태
-uint32_t gpioE_state; // GPIOE의 모든 핀 상태
+uint32_t gpioA_state = 0; // GPIOA의 모든 핀 상태
+uint32_t gpioB_state = 0; // GPIOB의 모든 핀 상태
+uint32_t gpioC_state = 0; // GPIOC의 모든 핀 상태
+uint32_t gpioD_state = 0; // GPIOD의 모든 핀 상태
+uint32_t gpioE_state = 0; // GPIOE의 모든 핀 상태
 
-uint32_t Last_gpioA_state;
-uint32_t Last_gpioB_state;
-uint32_t Last_gpioC_state;
-uint32_t Last_gpioD_state;
-uint32_t Last_gpioE_state;
+uint32_t Last_gpioA_state = 0;
+uint32_t Last_gpioB_state = 0;
+uint32_t Last_gpioC_state = 0;
+uint32_t Last_gpioD_state = 0;
+uint32_t Last_gpioE_state = 0;
 
-uint32_t gpioD_state = 0;
+uint32_t changedPinA = 0; //변한 값만 1로 바귐
+uint32_t changedPinB = 0;
+uint32_t changedPinC = 0;
+uint32_t changedPinD = 0;
+uint32_t changedPinE = 0;
 
 /* USER CODE END PV */
 
@@ -189,132 +192,112 @@ extern USBD_HandleTypeDef hUsbDeviceHS;
 
 
 
-MatrixScanResult MatrixScan()
-{
-	uint32_t Last_gpioA_state = gpioA_state;
-	uint32_t Last_gpioB_state = gpioB_state;
-	uint32_t Last_gpioC_state = gpioC_state;
-	uint32_t Last_gpioD_state = gpioD_state;
-	uint32_t Last_gpioE_state = gpioE_state;
 
-    uint32_t gpioA_state = GPIOA->IDR; // GPIOA의 모든 핀 상태
-    uint32_t gpioB_state = GPIOB->IDR; // GPIOB의 모든 핀 상태
-    uint32_t gpioC_state = GPIOC->IDR; // GPIOC의 모든 핀 상태
-    uint32_t gpioD_state = GPIOD->IDR; // GPIOD의 모든 핀 상태
-    uint32_t gpioE_state = GPIOE->IDR; // GPIOE의 모든 핀 상태
 
-    uint32_t changedPinA = gpioA_state ^ Last_gpioA_state;
+// GPIO 상태를 스캔하고 변경된 핀 정보를 반환하는 함수
+MatrixScanResult MatrixScan() {
+    // 이전 GPIO 상태를 static으로 유지
+    static uint32_t Last_gpioA_state = 0;
+    static uint32_t Last_gpioB_state = 0;
+    static uint32_t Last_gpioC_state = 0;
+    static uint32_t Last_gpioD_state = 0;
+    static uint32_t Last_gpioE_state = 0;
+
+    // 현재 GPIO 상태 읽기
+    uint32_t gpioA_state = GPIOA->IDR;// & 0010101111111111;
+    uint32_t gpioB_state = GPIOB->IDR;// & 0011101111000011;
+    uint32_t gpioC_state = GPIOC->IDR;// & 0100111111111111;
+    uint32_t gpioD_state = GPIOD->IDR;// & 1111111111111111;
+    uint32_t gpioE_state = GPIOE->IDR;// & 1111111111111111;
+
+    // 변경된 비트 계산 (XOR 연산)
+    uint32_t changedPinA = (gpioA_state ^ Last_gpioA_state) & 1111111111111111;;
     uint32_t changedPinB = gpioB_state ^ Last_gpioB_state;
     uint32_t changedPinC = gpioC_state ^ Last_gpioC_state;
     uint32_t changedPinD = gpioD_state ^ Last_gpioD_state;
     uint32_t changedPinE = gpioE_state ^ Last_gpioE_state;
 
-
-
-    if ( changedPinA != 0 )
-    {
-        int WhereIsOne = 0;
-        while ((changedPinA & 0) == true)
-        {
-        	changedPinA = changedPinA >> 1;
-            WhereIsOne++;
-        }
-
-        MatrixScanResult result;
-
-        uint8_t bitValue = (changedPinA >> WhereIsOne) & 1;
-
-        result.WhereIsOne = WhereIsOne;
-        result.PinState = bitValue;
-
-        return result;
-
-    }
-    else if ( changedPinB != 0)
-    {
-        int WhereIsOne = 0;
-        while ((changedPinB & 0) == true)
-        {
-        	changedPinB = changedPinB >> 1;
-            WhereIsOne++;
-        }
-
-        MatrixScanResult result;
-
-        uint8_t bitValue = (changedPinB >> WhereIsOne) & 1;
-
-        result.WhereIsOne = WhereIsOne+16;
-        result.PinState = bitValue;
-
-        return result;
-
-    }
-    else if ( changedPinC != 0)
-    {
-        int WhereIsOne = 0;
-        while ((changedPinC & 0) == true)
-        {
-        	changedPinC = changedPinC >> 1;
-            WhereIsOne++;
-        }
-
-        MatrixScanResult result;
-
-        uint8_t bitValue = (changedPinC >> WhereIsOne) & 1;
-
-        result.WhereIsOne = WhereIsOne + 32;
-        result.PinState = bitValue;
-
-        return result;
-
-    }
-    else if ( changedPinD != 0)
-    {
-        int WhereIsOne = 0;
-        while ((changedPinD & 0) == true)
-        {
-        	changedPinD = changedPinD >> 1;
-            WhereIsOne++;
-        }
-
-        MatrixScanResult result;
-
-        uint8_t bitValue = (changedPinD >> WhereIsOne) & 1;
-
-        result.WhereIsOne = WhereIsOne + 48;
-        result.PinState = bitValue;
-
-        return result;
-
-    }
-    else if ( changedPinE != 0)
-    {
-        int WhereIsOne = 0;
-        while ((changedPinE & 0) == true)
-        {
-        	changedPinE = changedPinE >> 1;
-            WhereIsOne++;
-        }
-
-        MatrixScanResult result;
-
-        uint8_t bitValue = (changedPinE >> WhereIsOne) & 1;
-
-        result.WhereIsOne = WhereIsOne + 64;
-        result.PinState = bitValue;
-
-        return result;
-
-    }
-
     MatrixScanResult result;
+    result.pinNumber = -1; // 초기값 (-1: 변경 없음)
+    result.pinState = -1;
 
-    result.WhereIsOne = -1;
-    result.PinState = -1;
+    // 포트 A~E 순서대로 변경된 핀 확인
+    if (changedPinA != 0) {
+        int bitPosition = 0;
+        while ((changedPinA & 1) == 0) {
+            changedPinA >>= 1; // 오른쪽으로 시프트
+            bitPosition++;
+        }
+        result.pinNumber = bitPosition; // 핀 번호 (포트 A는 0 ~ 15)
+        result.pinState = (gpioA_state >> bitPosition) & 1; // 현재 상태
 
-    return result;
+        char message[100];
+        sprintf(message, "A | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+
+    } else if (changedPinB != 0) {
+        int bitPosition = 0;
+        while ((changedPinB & 1) == 0) {
+            changedPinB >>= 1;
+            bitPosition++;
+        }
+        result.pinNumber = bitPosition + 16; // 핀 번호 (포트 B는 16 ~ 31)
+        result.pinState = (gpioB_state >> bitPosition) & 1;
+
+        char message[100];
+        sprintf(message, "B | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+
+    } else if (changedPinC != 0) {
+        int bitPosition = 0;
+        while ((changedPinC & 1) == 0) {
+            changedPinC >>= 1;
+            bitPosition++;
+        }
+        result.pinNumber = bitPosition + 32; // 핀 번호 (포트 C는 32 ~ 47)
+        result.pinState = (gpioC_state >> bitPosition) & 1;
+
+        char message[100];
+        sprintf(message, "C | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+
+    } else if (changedPinD != 0) {
+        int bitPosition = 0;
+        while ((changedPinD & 1) == 0) {
+            changedPinD >>= 1;
+            bitPosition++;
+        }
+        result.pinNumber = bitPosition + 48; // 핀 번호 (포트 D는 48 ~ 63)
+        result.pinState = (gpioD_state >> bitPosition) & 1;
+
+        char message[100];
+        sprintf(message, "D | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+
+    } else if (changedPinE != 0) {
+        int bitPosition = 0;
+        while ((changedPinE & 1) == 0) {
+            changedPinE >>= 1;
+            bitPosition++;
+        }
+        result.pinNumber = bitPosition + 64; // 핀 번호 (포트 E는 64 ~ 79)
+        result.pinState = (gpioE_state >> bitPosition) & 1;
+
+        char message[100];
+        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+
+    }
+
+    // 이전 상태 업데이트
+    Last_gpioA_state = gpioA_state;
+    Last_gpioB_state = gpioB_state;
+    Last_gpioC_state = gpioC_state;
+    Last_gpioD_state = gpioD_state;
+    Last_gpioE_state = gpioE_state;
+
+    return result; // 변경된 핀 정보 반환
 }
-
 
 
 
@@ -573,22 +556,23 @@ int main(void)
 
         // ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 
-
+        MatrixScan();
         MatrixScanResult Matrix = MatrixScan();
 /*
         uint32_t Temp = GPIOD->IDR;
         char message[100];
         sprintf(message, "1 = %d \n\r", Temp);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); */
-
-
-        char message[100];
-        sprintf(message, "1 = %d |  2 =  %d | 3 = %d \n\r", Matrix.WhereIsOne, Matrix.PinState, gpioD_state);
         HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
-
-
+*/
         /*
+        char message[100];
+        sprintf(message, "pinNumber = %d | pinState =  %d \n\r", Matrix.pinNumber, Matrix.pinState);
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+/*
+
+
+
         if ( Matrix.WhereIsOne != -1 )
         {
 
@@ -603,7 +587,7 @@ int main(void)
         	KeycodeSend();
 
         	Timer++;
-        }
+        } */
 
     /* USER CODE END WHILE */
 
@@ -731,11 +715,60 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+
+  /*Configure GPIO pins : PE2 PE3 PE4 PE5
+                           PE6 PE7 PE8 PE9
+                           PE10 PE11 PE12 PE13
+                           PE14 PE15 PE0 PE1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
+                          |GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9
+                          |GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
+                          |GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PC13 PC14 PC15 PC1
+                           PC4 PC5 PC6 PC7
+                           PC8 PC9 PC10 PC11
+                           PC12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_1
+                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7
+                          |GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11
+                          |GPIO_PIN_12;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA2 PA4 PA6 PA7
+                           PA8 PA9 PA10 PA11
+                           PA12 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7
+                          |GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11
+                          |GPIO_PIN_12|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB2 PB14 PB3 PB4
+                           PB6 PB7 PB8 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_14|GPIO_PIN_3|GPIO_PIN_4
+                          |GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PD8 PD9 PD10 PD11
                            PD12 PD13 PD14 PD15

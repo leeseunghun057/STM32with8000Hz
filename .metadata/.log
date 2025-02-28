@@ -1945,3 +1945,6 @@ Error finishing flash operation
 java.lang.Exception: Error finishing flash operation
 	at org.eclipse.cdt.dsf.mi.service.command.AbstractMIControl$RxThread.processMIOutput(AbstractMIControl.java:1024)
 	at org.eclipse.cdt.dsf.mi.service.command.AbstractMIControl$RxThread.run(AbstractMIControl.java:853)
+
+!ENTRY org.eclipse.cdt.core 1 0 2025-02-28 14:20:19.084
+!MESSAGE Indexed 'STM32H723' (34 sources, 135 headers) in 1.64 sec: 17,014 declarations; 101,438 references; 3 unresolved inclusions; 46 syntax errors; 171 unresolved names (0.14%)

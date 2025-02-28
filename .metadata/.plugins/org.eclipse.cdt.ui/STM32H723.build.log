@@ -1,53 +1,37 @@
-13:59:14 **** Incremental Build of configuration Release for project STM32H723 ****
+15:52:38 **** Incremental Build of configuration Release for project STM32H723 ****
 make -j12 all 
 arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m7 -std=gnu11 -DUSE_PWR_LDO_SUPPLY -DUSE_HAL_DRIVER -DSTM32H723xx -c -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I../USB_DEVICE/App -I../USB_DEVICE/Target -I../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc -Ofast -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
-../Core/Src/main.c: In function 'MatrixScan':
-../Core/Src/main.c:236:34: warning: bitwise comparison always evaluates to false [-Wtautological-compare]
-  236 |         while ((changedPinB & 0) == 1)
-      |                                  ^~
-../Core/Src/main.c:255:34: warning: bitwise comparison always evaluates to false [-Wtautological-compare]
-  255 |         while ((changedPinC & 0) == 1)
-      |                                  ^~
-../Core/Src/main.c:274:34: warning: bitwise comparison always evaluates to false [-Wtautological-compare]
-  274 |         while ((changedPinD & 0) == 1)
-      |                                  ^~
-../Core/Src/main.c:293:34: warning: bitwise comparison always evaluates to false [-Wtautological-compare]
-  293 |         while ((changedPinE & 0) == 1)
-      |                                  ^~
 ../Core/Src/main.c: In function 'CheckScanrate':
-../Core/Src/main.c:502:39: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  502 |         sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
+../Core/Src/main.c:485:39: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
+  485 |         sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
       |                                      ~^                             ~~~~~~~~~~~~~
       |                                       |                             |
       |                                       int                           uint32_t {aka long unsigned int}
       |                                      %ld
 ../Core/Src/main.c: In function 'main':
-../Core/Src/main.c:565:43: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  565 |             sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
+../Core/Src/main.c:548:43: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
+  548 |             sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate / 10);
       |                                          ~^                             ~~~~~~~~~~~~~
       |                                           |                             |
       |                                           int                           uint32_t {aka long unsigned int}
       |                                          %ld
-../Core/Src/main.c:586:52: warning: format '%d' expects argument of type 'int', but argument 5 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  586 |         sprintf(message, "1 = %d |  2 =  %d | 3 = %d \n\r", Matrix.WhereIsZero, Matrix.PinState, gpioD_state);
-      |                                                   ~^                                             ~~~~~~~~~~~
-      |                                                    |                                             |
-      |                                                    int                                           uint32_t {aka long unsigned int}
-      |                                                   %ld
-../Core/Src/main.c:608:5: warning: "/*" within comment [-Wcomment]
-  608 |     /* USER CODE END WHILE */
-      |      
+../Core/Src/main.c:572:1: warning: "/*" within comment [-Wcomment]
+  572 | /*
+      |  
+../Core/Src/main.c:560:26: warning: unused variable 'Matrix' [-Wunused-variable]
+  560 |         MatrixScanResult Matrix = MatrixScan();
+      |                          ^~~~~~
 arm-none-eabi-gcc -o "STM32H723.elf" @"objects.list"   -mcpu=cortex-m7 -T"C:\Users\leese\Music\STM32\STM32H723\STM32H723VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32H723.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 Finished building target: STM32H723.elf
  
 arm-none-eabi-size  STM32H723.elf 
 arm-none-eabi-objdump -h -S STM32H723.elf  > "STM32H723.list"
    text	   data	    bss	    dec	    hex	filename
-  29668	    360	   4600	  34628	   8744	STM32H723.elf
+  30204	    360	   4600	  35164	   895c	STM32H723.elf
 Finished building: default.size.stdout
  
 Finished building: STM32H723.list
  
 
-13:59:14 Build Finished. 0 errors, 8 warnings. (took 767ms)
+15:52:39 Build Finished. 0 errors, 4 warnings. (took 700ms)
 
