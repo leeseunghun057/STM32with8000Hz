@@ -222,15 +222,17 @@ MatrixScanResult MatrixScan() {
     //static uint32_t Last_gpioI_state = 0;
 
     // 현재 GPIO 상태 읽기
-    uint32_t gpioA_state = (~(GPIOA->IDR)) & 0b1001111111010100;
-    uint32_t gpioB_state = (~(GPIOB->IDR)) & 0b1100111111011100;
-    uint32_t gpioC_state = (~(GPIOC->IDR)) & 0b1111111111110010;
-    uint32_t gpioD_state = (~(GPIOD->IDR)) & 0b1111111111111111;
-    uint32_t gpioE_state = (~(GPIOE->IDR)) & 0b1111111111111111;
-    uint32_t gpioF_state = (~(GPIOF->IDR)) & 0b1111111111111111;
-    uint32_t gpioG_state = (~(GPIOG->IDR)) & 0b1111111111111111;
-    uint32_t gpioH_state = (~(GPIOH->IDR)) & 0b1111111111111100;
+    uint32_t gpioA_state = (~(GPIOA->IDR)) & 1100111111010100;
+    uint32_t gpioB_state = (~(GPIOB->IDR)) & 1100111111011100;
+    uint32_t gpioC_state = (~(GPIOC->IDR)) & 1111111111110010;
+    uint32_t gpioD_state = (~(GPIOD->IDR));// & 1111111111111111;
+    uint32_t gpioE_state = (~(GPIOE->IDR)) & 1111111111111111;
+    uint32_t gpioF_state = (~(GPIOF->IDR)) & 1111111111111111;
+    uint32_t gpioG_state = (~(GPIOG->IDR)) & 1111111111111111;
+    uint32_t gpioH_state = (~(GPIOH->IDR)) & 1111111111111100;
     //uint32_t gpioI_state = (!(GPIOI->IDR)) & 1111111111111111;
+
+    //uint32_t gpioD_state = !(GPIOD->IDR);// & 1111111111111111;
 
 
     // 변경된 비트 계산 (XOR 연산)

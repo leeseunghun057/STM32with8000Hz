@@ -222,15 +222,17 @@ MatrixScanResult MatrixScan() {
     //static uint32_t Last_gpioI_state = 0;
 
     // 현재 GPIO 상태 읽기
-    uint32_t gpioA_state = (~(GPIOA->IDR)) & 0b1001111111010100;
-    uint32_t gpioB_state = (~(GPIOB->IDR)) & 0b1100111111011100;
-    uint32_t gpioC_state = (~(GPIOC->IDR)) & 0b1111111111110010;
-    uint32_t gpioD_state = (~(GPIOD->IDR)) & 0b1111111111111111;
-    uint32_t gpioE_state = (~(GPIOE->IDR)) & 0b1111111111111111;
-    uint32_t gpioF_state = (~(GPIOF->IDR)) & 0b1111111111111111;
-    uint32_t gpioG_state = (~(GPIOG->IDR)) & 0b1111111111111111;
-    uint32_t gpioH_state = (~(GPIOH->IDR)) & 0b1111111111111100;
+    uint32_t gpioA_state = (~(GPIOA->IDR)) & 1100111111010100;
+    uint32_t gpioB_state = (~(GPIOB->IDR)) & 1100111111011100;
+    uint32_t gpioC_state = (~(GPIOC->IDR)) & 1111111111110010;
+    uint32_t gpioD_state = (~(GPIOD->IDR)) & 1111111111111111;
+    uint32_t gpioE_state = (~(GPIOE->IDR)) & 1111111111111111;
+    uint32_t gpioF_state = (~(GPIOF->IDR)) & 1111111111111111;
+    uint32_t gpioG_state = (~(GPIOG->IDR)) & 1111111111111111;
+    uint32_t gpioH_state = (~(GPIOH->IDR)) & 1111111111111100;
     //uint32_t gpioI_state = (!(GPIOI->IDR)) & 1111111111111111;
+
+    //uint32_t gpioD_state = !(GPIOD->IDR);// & 1111111111111111;
 
 
     // 변경된 비트 계산 (XOR 연산)
@@ -252,9 +254,9 @@ MatrixScanResult MatrixScan() {
     char message[100];
     sprintf(message, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
     HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
-//    char message2[100];
-  //  sprintf(message2, "A = %X | B = %X | C = %X | D = %X | E = %X \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-    //HAL_UART_Transmit(&huart4, (uint8_t *)message2, strlen(message2), HAL_MAX_DELAY);
+    char message2[100];
+    sprintf(message2, "A = %X | B = %X | C = %X | D = %X | E = %X \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
+    HAL_UART_Transmit(&huart4, (uint8_t *)message2, strlen(message2), HAL_MAX_DELAY);
 
     // 포트 A~E 순서대로 변경된 핀 확인
     if (changedPinA != 0)
@@ -268,10 +270,10 @@ MatrixScanResult MatrixScan() {
 
         result.pinNumber = bitPosition; // 핀 번호 (포트 A는 0 ~ 15)
         result.pinState = (gpioA_state >> bitPosition) & 1; // 현재 상태
-
+/*
         char message[100];
         sprintf(message, "A | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); */
 
     }
     else if ( changedPinB != 0 )
