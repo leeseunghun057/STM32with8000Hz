@@ -146,9 +146,9 @@ extern "C" {
 #define GPIOD1_0   KC_B
 #define GPIOD2_0   KC_C
 #define GPIOD3_0   KC_D
-#define GPIOD4_0   0
-#define GPIOD5_0   0
-#define GPIOD6_0   0
+#define GPIOD4_0   KC_D
+#define GPIOD5_0   KC_D
+#define GPIOD6_0   KC_D
 #define GPIOD7_0   0
 #define GPIOD8_0   0
 #define GPIOD9_0   0
