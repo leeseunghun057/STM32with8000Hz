@@ -65,7 +65,7 @@ HID_SendKeycode keyboardReport = {0};
 /* USER CODE BEGIN PD */
 #define KEY_NUMBER 100
 #define HOLD_TIME 250 // (ms)
-#define DEBOUNCE_TIME 1000 // (ms)
+#define DEBOUNCE_TIME 5 // (ms)
 #define TAP_DELAY 50 // (us)
 
 // Keycode are in main.h
@@ -155,7 +155,7 @@ char UART_message[100];
 
 int KeyTimer = 0;
 
-int DebounceTimer[] = { 0 };
+uint32_t DebounceTimer[128] = { 0 };
 
 uint32_t gpioA_state = 0; // GPIOA의 모든 핀 상태
 uint32_t gpioB_state = 0; // GPIOB의 모든 핀 상태
@@ -266,9 +266,9 @@ MatrixScanResult MatrixScan() {
         result.pinNumber = bitPosition; // 핀 번호 (포트 A는 0 ~ 15)
         result.pinState = (gpioA_state >> bitPosition) & 1; // 현재 상태
 
-        char message[100];
-        sprintf(message, "A | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "A | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     }
     else if ( changedPinB != 0 )
@@ -283,9 +283,9 @@ MatrixScanResult MatrixScan() {
         result.pinNumber = bitPosition + 16; // 핀 번호 (포트 B는 16 ~ 31)
         result.pinState = (gpioB_state >> bitPosition) & 1;
 
-        char message[100];
-        sprintf(message, "B | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "B | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     }
     else if ( changedPinC != 0 )
@@ -300,9 +300,9 @@ MatrixScanResult MatrixScan() {
         result.pinNumber = bitPosition + 32; // 핀 번호 (포트 C는 32 ~ 47)
         result.pinState = (gpioC_state >> bitPosition) & 1;
 
-        char message[100];
-        sprintf(message, "C | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "C | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     }
     else if ( changedPinD != 0 )
@@ -317,9 +317,9 @@ MatrixScanResult MatrixScan() {
         result.pinNumber = bitPosition + 48; // 핀 번호 (포트 D는 48 ~ 63)
         result.pinState = (gpioD_state >> bitPosition) & 1;
 
-        char message[100];
-        sprintf(message, "D | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "D | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     }
     else if ( changedPinE != 0 )
@@ -334,9 +334,9 @@ MatrixScanResult MatrixScan() {
         result.pinNumber = bitPosition + 64; // 핀 번호 (포트 E는 64 ~ 79)
         result.pinState = (gpioE_state >> bitPosition) & 1;
 
-        char message[100];
-        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     }
     else if ( changedPinF != 0 )
@@ -348,12 +348,12 @@ MatrixScanResult MatrixScan() {
             bitPosition++;
         }
 
-        result.pinNumber = bitPosition + 64; // 핀 번호 (포트 E는 64 ~ 79)
+        result.pinNumber = bitPosition + 80; // 핀 번호 (포트 E는 64 ~ 79)
         result.pinState = (gpioF_state >> bitPosition) & 1;
 
-        char message[100];
-        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     }
     else if ( changedPinG != 0 )
@@ -365,12 +365,12 @@ MatrixScanResult MatrixScan() {
             bitPosition++;
         }
 
-        result.pinNumber = bitPosition + 64; // 핀 번호 (포트 E는 64 ~ 79)
+        result.pinNumber = bitPosition + 96; // 핀 번호 (포트 E는 64 ~ 79)
         result.pinState = (gpioG_state >> bitPosition) & 1;
 
-        char message[100];
-        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     }
     else if ( changedPinH != 0 )
@@ -382,64 +382,82 @@ MatrixScanResult MatrixScan() {
             bitPosition++;
         }
 
-        result.pinNumber = bitPosition + 64; // 핀 번호 (포트 E는 64 ~ 79)
+        result.pinNumber = bitPosition + 112; // 핀 번호 (포트 E는 64 ~ 79)
         result.pinState = (gpioH_state >> bitPosition) & 1;
 
-        char message[100];
-        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//        char message[100];
+//        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
-    } /*
-    else if ( changedPinI != 0 )
-    {
-        int bitPosition = 0;
-        while ( changedPinI )
-        {
-        	changedPinI >>= 1;
-            bitPosition++;
-        }
-
-        result.pinNumber = bitPosition + 64; // 핀 번호 (포트 E는 64 ~ 79)
-        result.pinState = (gpioI_state >> bitPosition) & 1;
-
-        char message[100];
-        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
-
-    } */
+    }
+//    else if ( changedPinI != 0 )
+//    {
+//        int bitPosition = 0;
+//        while ( changedPinI )
+//        {
+//        	changedPinI >>= 1;
+//            bitPosition++;
+//        }
+//
+//        result.pinNumber = bitPosition + 128; // 핀 번호 (포트 E는 64 ~ 79)
+//        result.pinState = (gpioI_state >> bitPosition) & 1;
+//
+//        char message[100];
+//        sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+//
+//    }
 
 
 
 
     // 이전 상태 업데이트
 
-    Last_gpioA_state = gpioA_state;
-    Last_gpioB_state = gpioB_state;
-    Last_gpioC_state = gpioC_state;
-    Last_gpioD_state = gpioD_state;
-    Last_gpioE_state = gpioE_state;
-    Last_gpioF_state = gpioF_state;
-    Last_gpioG_state = gpioG_state;
-    Last_gpioH_state = gpioH_state;
-
-
+    char message[100];
+	sprintf(message, "GENERAL | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
+	HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
     if ( HAL_GetTick() - DebounceTimer[result.pinNumber] > DEBOUNCE_TIME)
     {
 
-        // Last_gpioI_state = gpioI_state;
+
 
         DebounceTimer[result.pinNumber] = HAL_GetTick();
-
-
-    	return result;
+        Last_gpioA_state = gpioA_state;
+        Last_gpioB_state = gpioB_state;
+        Last_gpioC_state = gpioC_state;
+        Last_gpioD_state = gpioD_state;
+        Last_gpioE_state = gpioE_state;
+        Last_gpioF_state = gpioF_state;
+        Last_gpioG_state = gpioG_state;
+        Last_gpioH_state = gpioH_state;
+        // Last_gpioI_state = gpioI_s tate;
     }
     else
     {
-        result.pinNumber = -1;
+        result.pinNumber = -1; // 핀 번호 (포트 E는 64 ~ 79)
         result.pinState = -1;
-        return result;
+
+		char message[100];
+		sprintf(message, "DEB %d \n\r", HAL_GetTick() - DebounceTimer[result.pinNumber]);
+		HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+
     }
+    return result;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -512,7 +530,7 @@ void KeycodeSend()
     USBD_HID_SendReport(&hUsbDeviceHS, (uint8_t *)&keyboardReport, sizeof(keyboardReport));
 
     char message[100];
-    sprintf(message, "KeycodeSend");
+    sprintf(message, "KeycodeSend \n\r");
     HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 }
 
