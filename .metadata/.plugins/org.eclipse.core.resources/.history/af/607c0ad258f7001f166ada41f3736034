@@ -220,7 +220,7 @@ MatrixScanResult MatrixScan() {
     static uint32_t Last_gpioE_state = 0;
     static uint32_t Last_gpioF_state = 0;
     static uint32_t Last_gpioG_state = 0;
-    static uint32_t Last_gpioH_state = 0;
+    //static uint32_t Last_gpioH_state = 0;
     //static uint32_t Last_gpioI_state = 0;
 
     // 현재 GPIO 상태 읽기
@@ -231,7 +231,7 @@ MatrixScanResult MatrixScan() {
     uint32_t gpioE_state = (~(GPIOE->IDR)) & 0b1111111111110111;
     uint32_t gpioF_state = (~(GPIOF->IDR)) & 0b1111111111111111;
     uint32_t gpioG_state = (~(GPIOG->IDR)) & 0b1111111111111111;
-    uint32_t gpioH_state = (~(GPIOH->IDR)) & 0b0011111111111100;
+    //uint32_t gpioH_state = (~(GPIOH->IDR)) & 0b0011111111111100;
     //uint32_t gpioI_state = (-(GPIOI->IDR)) & 0b1111111111111111;
 
 
@@ -243,7 +243,7 @@ MatrixScanResult MatrixScan() {
     uint32_t changedPinE = gpioE_state ^ Last_gpioE_state;
     uint32_t changedPinF = gpioF_state ^ Last_gpioF_state;
     uint32_t changedPinG = gpioG_state ^ Last_gpioG_state;
-    uint32_t changedPinH = gpioH_state ^ Last_gpioH_state;
+    //uint32_t changedPinH = gpioH_state ^ Last_gpioH_state;
     //uint32_t changedPinI = gpioI_state ^ Last_gpioI_state;
 
     MatrixScanResult result;
