@@ -187,6 +187,8 @@ uint32_t changedPinG = 0;
 uint32_t changedPinH = 0;
 uint32_t changedPinI = 0;
 
+uint32_t CurrentTime = 0;
+
 
 /* USER CODE END PV */
 
@@ -211,7 +213,7 @@ extern USBD_HandleTypeDef hUsbDeviceHS;
 MatrixScanResult MatrixScan() {
     // 이전 GPIO 상태를 static으로 유지
 
-	uint32_t CurrentTime = HAL_GetTick();
+
 
     static uint32_t Last_gpioA_state = 0;
     static uint32_t Last_gpioB_state = 0;
@@ -792,14 +794,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        //Timer = HAL_GetTick(); // Get Current Time
 
-    	//CheckScanrate();
+    	CurrentTime = HAL_GetTick();
 
-        if (HAL_GetTick() - LastTimer >= 1000)
+        if (CurrentTime - LastTimer >= 10000)
         {
             char message[100];
-            sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate );
+            sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", CurrentTime, Scanrate / 10);
             HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
             LastTimer = HAL_GetTick();
@@ -811,33 +812,9 @@ int main(void)
         // ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 
         MatrixScanResult Matrix = MatrixScan();
-/*
-        uint32_t Temp = GPIOD->IDR;
-        char message[100];
-        sprintf(message, "1 = %d \n\r", Temp);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
-
-*/
-        /*
-        char message[100];
-        sprintf(message, "pinNumber = %d | pinState =  %d \n\r", Matrix.pinNumber, Matrix.pinState);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); */
-
-
-//		char message3[100];
-//		sprintf(message3, "A = %u | B = %u | C = %u | D = %u | E = %u \n\r", gpioA_state,gpioB_state,gpioC_state,gpioD_state,gpioE_state );
-//		HAL_UART_Transmit(&huart4, (uint8_t *)message3, strlen(message3), HAL_MAX_DELAY);
-//
-//        char message[100];
-//        sprintf(message, "pinNumber = %d | pinState =  %d \n\r", Matrix.pinNumber, Matrix.pinState);
-//        HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
         if ( Matrix.pinNumber != -1 )
         {
-
-
-
-
 			if ( Matrix.pinState == 1)
 			{
 				PressKeycodes(Matrix.pinNumber);
@@ -850,6 +827,10 @@ int main(void)
 			}
 
         }
+
+
+        //HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_2);
+
 
     /* USER CODE END WHILE */
 
@@ -984,6 +965,9 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : PE2 PE3 PE4 PE5
                            PE6 PE7 PE8 PE9
                            PE10 PE11 PE12 PE13
@@ -1008,12 +992,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA2 PA4 PA6 PA7
-                           PA8 PA9 PA10 PA11
-                           PA12 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7
-                          |GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11
-                          |GPIO_PIN_12|GPIO_PIN_15;
+  /*Configure GPIO pin : PA2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA4 PA6 PA7 PA8
+                           PA9 PA10 PA11 PA12
+                           PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8
+                          |GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12
+                          |GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

@@ -1,10 +1,10 @@
-20:23:54 **** Incremental Build of configuration Debug for project STM32H723 ****
+22:12:57 **** Incremental Build of configuration Debug for project STM32H723 ****
 make -j12 all 
 arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m7 -std=gnu11 -g -DDEBUG -DUSE_PWR_LDO_SUPPLY -DUSE_HAL_DRIVER -DSTM32H723xx -c -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I../USB_DEVICE/App -I../USB_DEVICE/Target -I../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
 ../Core/Src/main.c: In function 'main':
-../Core/Src/main.c:802:43: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
-  802 |             sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", HAL_GetTick(), Scanrate );
-      |                                          ~^                             ~~~~~~~~~~~~~
+../Core/Src/main.c:803:43: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
+  803 |             sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", CurrentTime, Scanrate / 10);
+      |                                          ~^                             ~~~~~~~~~~~
       |                                           |                             |
       |                                           int                           uint32_t {aka long unsigned int}
       |                                          %ld
@@ -14,11 +14,11 @@ Finished building target: STM32H723.elf
 arm-none-eabi-size  STM32H723.elf 
 arm-none-eabi-objdump -h -S STM32H723.elf  > "STM32H723.list"
    text	   data	    bss	    dec	    hex	filename
-  48676	    792	   5544	  55012	   d6e4	STM32H723.elf
+  48808	    792	   5552	  55152	   d770	STM32H723.elf
 Finished building: default.size.stdout
  
 Finished building: STM32H723.list
  
 
-20:23:55 Build Finished. 0 errors, 1 warnings. (took 646ms)
+22:12:58 Build Finished. 0 errors, 1 warnings. (took 646ms)
 
