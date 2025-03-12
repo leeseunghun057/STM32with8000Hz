@@ -139,7 +139,23 @@ GPIO_TypeDef *GPIO_ABC[KEY_NUMBER] = {GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, 
 
 int GPIO_Num[KEY_NUMBER] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_10, GPIO_PIN_11, GPIO_PIN_12, GPIO_PIN_13, GPIO_PIN_14, GPIO_PIN_15 };
 
-uint16_t Keycode[][KEY_NUMBER] = {{GPIOA0_0, GPIOA1_0, GPIOA2_0, GPIOA3_0, GPIOA4_0, GPIOA5_0, GPIOA6_0, GPIOA7_0, GPIOA8_0, GPIOA9_0, GPIOA10_0, GPIOA11_0, GPIOA12_0, GPIOA13_0, GPIOA14_0, GPIOA15_0, GPIOB0_0, GPIOB1_0, GPIOB2_0, GPIOB3_0, GPIOB4_0, GPIOB5_0, GPIOB6_0, GPIOB7_0, GPIOB8_0, GPIOB9_0, GPIOB10_0, GPIOB11_0, GPIOB12_0, GPIOB13_0, GPIOB14_0, GPIOB15_0, GPIOC0_0, GPIOC1_0, GPIOC2_0, GPIOC3_0, GPIOC4_0, GPIOC5_0, GPIOC6_0, GPIOC7_0, GPIOC8_0, GPIOC9_0, GPIOC10_0, GPIOC11_0, GPIOC12_0, GPIOC13_0, GPIOC14_0, GPIOC15_0, GPIOD0_0, GPIOD1_0, GPIOD2_0, GPIOD3_0, GPIOD4_0, GPIOD5_0, GPIOD6_0, GPIOD7_0, GPIOD8_0, GPIOD9_0, GPIOD10_0, GPIOD11_0, GPIOD12_0, GPIOD13_0, GPIOD14_0, GPIOD15_0, GPIOE0_0, GPIOE1_0, GPIOE2_0, GPIOE3_0, GPIOE4_0, GPIOE5_0, GPIOE6_0, GPIOE7_0, GPIOE8_0, GPIOE9_0, GPIOE10_0, GPIOE11_0, GPIOE12_0, GPIOE13_0, GPIOE14_0, GPIOE15_0}, {GPIOA0_1, GPIOA1_1, GPIOA2_1, GPIOA3_1, GPIOA4_1, GPIOA5_1, GPIOA6_1, GPIOA7_1, GPIOA8_1, GPIOA9_1, GPIOA10_1, GPIOA11_1, GPIOA12_1, GPIOA13_1, GPIOA14_1, GPIOA15_1, GPIOB0_1, GPIOB1_1, GPIOB2_1, GPIOB3_1, GPIOB4_1, GPIOB5_1, GPIOB6_1, GPIOB7_1, GPIOB8_1, GPIOB9_1, GPIOB10_1, GPIOB11_1, GPIOB12_1, GPIOB13_1, GPIOB14_1, GPIOB15_1, GPIOC0_1, GPIOC1_1, GPIOC2_1, GPIOC3_1, GPIOC4_1, GPIOC5_1, GPIOC6_1, GPIOC7_1, GPIOC8_1, GPIOC9_1, GPIOC10_1, GPIOC11_1, GPIOC12_1, GPIOC13_1, GPIOC14_1, GPIOC15_1, GPIOD0_1, GPIOD1_1, GPIOD2_1, GPIOD3_1, GPIOD4_1, GPIOD5_1, GPIOD6_1, GPIOD7_1, GPIOD8_1, GPIOD9_1, GPIOD10_1, GPIOD11_1, GPIOD12_1, GPIOD13_1, GPIOD14_1, GPIOD15_1, GPIOE0_1, GPIOE1_1, GPIOE2_1, GPIOE3_1, GPIOE4_1, GPIOE5_1, GPIOE6_1, GPIOE7_1, GPIOE8_1, GPIOE9_1, GPIOE10_1, GPIOE11_1, GPIOE12_1, GPIOE13_1, GPIOE14_1, GPIOE15_1}};
+uint16_t Keycode[][KEY_NUMBER] = {
+    {
+        GPIOA0_0, GPIOA1_0, GPIOA2_0, GPIOA3_0, GPIOA4_0, GPIOA5_0, GPIOA6_0, GPIOA7_0, GPIOA8_0, GPIOA9_0, GPIOA10_0, GPIOA11_0, GPIOA12_0, GPIOA13_0, GPIOA14_0, GPIOA15_0,
+        GPIOB0_0, GPIOB1_0, GPIOB2_0, GPIOB3_0, GPIOB4_0, GPIOB5_0, GPIOB6_0, GPIOB7_0, GPIOB8_0, GPIOB9_0, GPIOB10_0, GPIOB11_0, GPIOB12_0, GPIOB13_0, GPIOB14_0, GPIOB15_0,
+        GPIOC0_0, GPIOC1_0, GPIOC2_0, GPIOC3_0, GPIOC4_0, GPIOC5_0, GPIOC6_0, GPIOC7_0, GPIOC8_0, GPIOC9_0, GPIOC10_0, GPIOC11_0, GPIOC12_0, GPIOC13_0, GPIOC14_0, GPIOC15_0,
+        GPIOD0_0, GPIOD1_0, GPIOD2_0, GPIOD3_0, GPIOD4_0, GPIOD5_0, GPIOD6_0, GPIOD7_0, GPIOD8_0, GPIOD9_0, GPIOD10_0, GPIOD11_0, GPIOD12_0, GPIOD13_0, GPIOD14_0, GPIOD15_0,
+        GPIOE0_0, GPIOE1_0, GPIOE2_0, GPIOE3_0, GPIOE4_0, GPIOE5_0, GPIOE6_0, GPIOE7_0, GPIOE8_0, GPIOE9_0, GPIOE10_0, GPIOE11_0, GPIOE12_0, GPIOE13_0, GPIOE14_0, GPIOE15_0
+    },
+
+    {
+        GPIOA0_1, GPIOA1_1, GPIOA2_1, GPIOA3_1, GPIOA4_1, GPIOA5_1, GPIOA6_1, GPIOA7_1, GPIOA8_1, GPIOA9_1, GPIOA10_1, GPIOA11_1, GPIOA12_1, GPIOA13_1, GPIOA14_1, GPIOA15_1,
+        GPIOB0_1, GPIOB1_1, GPIOB2_1, GPIOB3_1, GPIOB4_1, GPIOB5_1, GPIOB6_1, GPIOB7_1, GPIOB8_1, GPIOB9_1, GPIOB10_1, GPIOB11_1, GPIOB12_1, GPIOB13_1, GPIOB14_1, GPIOB15_1,
+        GPIOC0_1, GPIOC1_1, GPIOC2_1, GPIOC3_1, GPIOC4_1, GPIOC5_1, GPIOC6_1, GPIOC7_1, GPIOC8_1, GPIOC9_1, GPIOC10_1, GPIOC11_1, GPIOC12_1, GPIOC13_1, GPIOC14_1, GPIOC15_1,
+        GPIOD0_1, GPIOD1_1, GPIOD2_1, GPIOD3_1, GPIOD4_1, GPIOD5_1, GPIOD6_1, GPIOD7_1, GPIOD8_1, GPIOD9_1, GPIOD10_1, GPIOD11_1, GPIOD12_1, GPIOD13_1, GPIOD14_1, GPIOD15_1,
+        GPIOE0_1, GPIOE1_1, GPIOE2_1, GPIOE3_1, GPIOE4_1, GPIOE5_1, GPIOE6_1, GPIOE7_1, GPIOE8_1, GPIOE9_1, GPIOE10_1, GPIOE11_1, GPIOE12_1, GPIOE13_1, GPIOE14_1, GPIOE15_1
+    }
+};
 
 int Modifier_Bit[8] = {BIT_LCTL, BIT_LSFT, BIT_LALT, BIT_LGUI, BIT_RCTL, BIT_RSFT, BIT_RALT, BIT_RGUI};
 
@@ -505,28 +521,52 @@ MatrixScanResult MatrixScan() {
 
 
 void SetKeycode(int keycode)
-{
-    if (keyboardReport.Keycode1 == 0x00)
+{   
+    if (keycode == keyboardReport.Keycode1)
+    {
+        return;
+    }
+    else if (keyboardReport.Keycode1 == 0x00)
     {
         keyboardReport.Keycode1 = keycode;
     }
-    else if (keyboardReport.Keycode2 == 0x00 && keycode != keyboardReport.Keycode1)
+    else if (keycode == keyboardReport.Keycode2)
+    {
+        return;
+    }
+    else if (keyboardReport.Keycode2 == 0x00)
     {
         keyboardReport.Keycode2 = keycode;
     }
-    else if (keyboardReport.Keycode3 == 0x00 && keycode != keyboardReport.Keycode2 && keycode != keyboardReport.Keycode1)
+    else if (keycode == keyboardReport.Keycode3)
+    {
+        return;
+    }
+    else if (keyboardReport.Keycode3 == 0x00)
     {
         keyboardReport.Keycode3 = keycode;
     }
-    else if (keyboardReport.Keycode4 == 0x00 && keycode != keyboardReport.Keycode3 && keycode != keyboardReport.Keycode2 && keycode != keyboardReport.Keycode1)
+    else if (keycode == keyboardReport.Keycode4)
+    {
+        return;
+    }
+    else if (keyboardReport.Keycode4 == 0x00)
     {
         keyboardReport.Keycode4 = keycode;
     }
-    else if (keyboardReport.Keycode5 == 0x00 && keycode != keyboardReport.Keycode4 && keycode != keyboardReport.Keycode3 && keycode != keyboardReport.Keycode2 && keycode != keyboardReport.Keycode1)
+    else if (keycode == keyboardReport.Keycode5)
+    {
+        return;
+    }
+    else if (keyboardReport.Keycode5 == 0x00)
     {
         keyboardReport.Keycode5 = keycode;
     }
-    else if (keyboardReport.Keycode6 == 0x00 && keycode != keyboardReport.Keycode5 && keycode != keyboardReport.Keycode4 && keycode != keyboardReport.Keycode3 && keycode != keyboardReport.Keycode2 && keycode != keyboardReport.Keycode1)
+    else if (keycode == keyboardReport.Keycode6)
+    {
+        return;
+    }
+    else if (keyboardReport.Keycode6 == 0x00)
     {
         keyboardReport.Keycode6 = keycode;
     }
