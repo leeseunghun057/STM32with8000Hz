@@ -620,30 +620,27 @@ void PressKeycodes(int i)
 		sprintf(message5, "HoldTapPress = %d \n\r", Keycode[LayerState][i]);
 		HAL_UART_Transmit(&huart4, (uint8_t *)message5, strlen(message5), HAL_MAX_DELAY);
 	}
-	else if (Keycode[LayerState][i] >= 10000)
+	else if (IS_MOD(Keycode[LayerState][i]))
 	{ // MODIFIER
-		Modifier_Sum = Modifier_Sum | Modifier_Bit[Keycode[LayerState][i] - 10000];
+		Modifier_Sum = Modifier_Sum | Modifier_Bit[Keycode[LayerState][i] - KC_MOD_MIN];
 		keyboardReport.MODIFIER = Modifier_Sum;
 
 		char message1[100];
-		sprintf(message1, "ModifierPress = %d \n\r", Modifier_Bit[Keycode[LayerState][i] - 10000]);
+		sprintf(message1, "ModifierPress = %d \n\r", Modifier_Bit[Keycode[LayerState][i] - KC_MOD_MIN]);
 		HAL_UART_Transmit(&huart4, (uint8_t *)message1, strlen(message1), HAL_MAX_DELAY);
 	}
-	else if (Keycode[LayerState][i] >= 5000)
+	else if (IS_FN(Keycode[LayerState][i]) || IS_TD(Keycode[LayerState][i]))
 	{
 
-		if ( Keycode[LayerState][i] == KC_FN1)
+		if ( IS_FN(Keycode[LayerState][i]) )
 		{
-			LayerState = 1; // Layer1 when pressed
+			LayerState = FN_TO_LAYER_NUMBER(Keycode[LayerState][i]); // Layer1 when pressed
 		}
-		else if ( Keycode[LayerState][i] == KC_TD0)
+		else if ( IS_TD(Keycode[LayerState][i]))
 		{
-			LayerState = 0;
+			LayerState = TD_TO_LAYER_NUMBER(Keycode[LayerState][i]);
 		}
-		else if ( Keycode[LayerState][i] == KC_TD1)
-		{
-			LayerState = 1;
-		}
+		
 
 		char message1[100];
 		sprintf(message1, "Current Layer = %d \n\r", LayerState);
@@ -671,7 +668,7 @@ void ReleaseKeycodes(int i)
         }
         else
         {
-            TempKeycode = Keycode[LayerState][i] - 30000; // Tap 작동시 현재 레이어에 있는 키코드 -30000 전송
+            TempKeycode = Keycode[LayerState][i] - HOLDTAP_MIN; // Tap 작동시 현재 레이어에 있는 키코드 -30000 전송
         }
         SetKeycode(TempKeycode);
         KeycodeSend();
@@ -684,18 +681,18 @@ void ReleaseKeycodes(int i)
         sprintf(message5, "HoldTapRelease = %d \n\r", Keycode[LayerState][i]);
         HAL_UART_Transmit(&huart4, (uint8_t *)message5, strlen(message5), HAL_MAX_DELAY);
     }
-    else if (Keycode[LayerState][i] >= 10000)
+    else if (Keycode[LayerState][i] >= KC_MOD_MIN)
     { // MODIFIER
-        Modifier_Sum = Modifier_Sum & ~(Modifier_Bit[Keycode[LayerState][i] - 10000]);
+        Modifier_Sum = Modifier_Sum & ~(Modifier_Bit[Keycode[LayerState][i] - KC_MOD_MIN]);
         keyboardReport.MODIFIER = Modifier_Sum;
 
         char message2[100];
         sprintf(message2, "ModifierRelease = %d\n\r", Keycode[LayerState][i]);
         HAL_UART_Transmit(&huart4, (uint8_t *)message2, strlen(message2), HAL_MAX_DELAY);
     }
-    else if (Keycode[LayerState][i] >= 5000 )
+    else if (Keycode[LayerState][i] >= KC_FN_MIN )
     {
-    	if ( Keycode[LayerState][i] == KC_FN1 )
+    	if ( Keycode[LayerState][i] == FN(1) )
     	{
             LayerState = 0; // Layer0 when released
             char message1[100];
