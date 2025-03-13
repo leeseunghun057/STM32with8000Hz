@@ -47,49 +47,59 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
-#define HOLDTAP_SHIFTING 30000
+#define HOLDTAP_SHIFTING 0x3000
+#define HOLDTAP_MIN 0x3000
 
-#define KC_A 0x04
-#define KC_B 0x05
-#define KC_C 0x06
-#define KC_D 0x07
-#define KC_E 0x08
-#define KC_F 0x09
-#define KC_G 0x0a
-#define KC_H 0x0b
-#define KC_I 0x0c
-#define KC_J 0x0d
-#define KC_K 0x0e
-#define KC_L 0x0f
-#define KC_M 0x10
-#define KC_N 0x11
-#define KC_O 0x12
-#define KC_P 0x13
-#define KC_Q 0x14
-#define KC_R 0x15
-#define KC_S 0x16
-#define KC_T 0x17
-#define KC_U 0x18
-#define KC_V 0x19
-#define KC_W 0x1a
-#define KC_X 0x1b
-#define KC_Y 0x1c
-#define KC_Z 0x1d
+#define KC_A 0x0004
+#define KC_B 0x0005
+#define KC_C 0x0006
+#define KC_D 0x0007
+#define KC_E 0x0008
+#define KC_F 0x0009
+#define KC_G 0x000A
+#define KC_H 0x000B
+#define KC_I 0x000C
+#define KC_J 0x000D
+#define KC_K 0x000E
+#define KC_L 0x000F
+#define KC_M 0x0010
+#define KC_N 0x0011
+#define KC_O 0x0012
+#define KC_P 0x0013
+#define KC_Q 0x0014
+#define KC_R 0x0015
+#define KC_S 0x0016
+#define KC_T 0x0017
+#define KC_U 0x0018
+#define KC_V 0x0019
+#define KC_W 0x001A
+#define KC_X 0x001B
+#define KC_Y 0x001C
+#define KC_Z 0x001D
 
 // Custom Keycode
-#define KC_LCTL 10000
-#define KC_LSFT 10001
-#define KC_LALT 10002
-#define KC_LGUI 10003
-#define KC_RCTL 10004
-#define KC_RSFT 10005
-#define KC_RALT 10006
-#define KC_RGUI 10007
+#define KC_MOD_MIN 0x0100
+#define KC_MOD_MAX 0x0107
+#define KC_LCTL 0x0100
+#define KC_LSFT 0x0101
+#define KC_LALT 0x0102
+#define KC_LGUI 0x0103
+#define KC_RCTL 0x0104
+#define KC_RSFT 0x0105
+#define KC_RALT 0x0106
+#define KC_RGUI 0x0107
+#define IS_MOD(keycode) ((keycode>=KC_MOD_MIN)&&(keycode<=KC_MOD_MAX))
 
-#define KC_FN1 5000 // layer1 when press
-#define KC_TD0 5001 // switch layer to 0
-#define KC_TD1 5002 // switch layer to 1
-
+#define KC_FN_MIN 0x5000
+#define KC_FN_MAX 0x50FF // layer1 when press
+#define KC_TD_MIN 0x5100 // switch layer to 0
+#define KC_TD_MAX 0x51FF // switch layer to 1
+#define FN(layernumber) KC_FN_MIN+layernumber
+#define FN_TO_LAYER_NUMBER(fnx) fnx-KC_FN_MIN
+#define IS_FN(keycode) ((keycode>=KC_FN_MIN)&&(keycode<=KC_FN_MAX))
+#define TD(layernumber) KC_TD_MIN+layernumber
+#define TD_TO_LAYER_NUMBER(tdx) tdx-KC_FN_MIN
+#define IS_TD(keycode) ((keycode>=KC_TD_MIN)&&(keycode<=KC_TD_MAX))
 
 #define GPIOA0_0   0
 #define GPIOA1_0   0
