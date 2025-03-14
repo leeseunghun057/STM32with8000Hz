@@ -47,8 +47,11 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
-#define HOLDTAP_SHIFTING 0x3000
-#define HOLDTAP_MIN 0x3000
+#define HOLDTAP_SHIFTING 0x5000
+#define HOLDTAP_MIN 0x5000
+
+#define KC_NO 0x0000
+#define KC_TRNS 0x0001
 
 #define KC_A 0x0004
 #define KC_B 0x0005
@@ -89,16 +92,17 @@ extern "C" {
 #define KC_RALT 0x0106
 #define KC_RGUI 0x0107
 #define IS_MOD(keycode) ((keycode>=KC_MOD_MIN)&&(keycode<=KC_MOD_MAX))
+#define MOD_TO_BIT(keycode) (1 << (keycode-KC_MOD_MIN))
 
 #define KC_FN_MIN 0x5000
 #define KC_FN_MAX 0x50FF // layer1 when press
 #define KC_TD_MIN 0x5100 // switch layer to 0
 #define KC_TD_MAX 0x51FF // switch layer to 1
-#define FN(layernumber) KC_FN_MIN+layernumber
-#define FN_TO_LAYER_NUMBER(fnx) fnx-KC_FN_MIN
+#define FN(layernumber) (KC_FN_MIN+layernumber)
+#define FN_TO_LAYER_NUMBER(fnx) (fnx-KC_FN_MIN)
 #define IS_FN(keycode) ((keycode>=KC_FN_MIN)&&(keycode<=KC_FN_MAX))
-#define TD(layernumber) KC_TD_MIN+layernumber
-#define TD_TO_LAYER_NUMBER(tdx) tdx-KC_FN_MIN
+#define TD(index) (KC_TD_MIN+index)
+#define TD_TO_INDEX(tdx) (tdx-KC_FN_MIN)
 #define IS_TD(keycode) ((keycode>=KC_TD_MIN)&&(keycode<=KC_TD_MAX))
 
 #define GPIOA0_0   0
@@ -152,7 +156,7 @@ extern "C" {
 #define GPIOC14_0  0
 #define GPIOC15_0  0
 
-#define GPIOD0_0   KC_A + HOLDTAP_SHIFTING
+#define GPIOD0_0   TD(1)
 #define GPIOD1_0   KC_B
 #define GPIOD2_0   KC_C
 #define GPIOD3_0   KC_D

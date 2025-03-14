@@ -17,18 +17,17 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usbd_hid.h"
-#include "main.h"
 #include <stdio.h>
 #include "stm32h7xx_hal_uart.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,10 +52,17 @@ typedef struct {
 } MatrixScanResult;
 
 
-
-
-
-
+MatrixScanResult MatrixScan(void);
+void KeyboardInit(void);
+void SetKeycode(int keycode);
+void ResetKeycode(int keycode);
+void KeycodeSend();
+int GetLayer(int SwitchIndex);
+void TapDance(int tdindex, bool pressed);
+void PressSwitch(int SwitchIndex);
+void PressKeycode(uint16_t keycode);
+void ReleaseSwitch(int SwitchIndex);
+void ReleaseKeycode(uint16_t keycode);
 
 HID_SendKeycode keyboardReport = {0};
 /* USER CODE END PTD */
@@ -70,7 +76,6 @@ HID_SendKeycode keyboardReport = {0};
 
 // Keycode are in main.h
 
-
 #define BIT_LCTL 0b00000001
 #define BIT_LSFT 0b00000010
 #define BIT_LALT 0b00000100
@@ -80,38 +85,7 @@ HID_SendKeycode keyboardReport = {0};
 #define BIT_RALT 0b01000000
 #define BIT_RGUI 0b10000000
 
-
-
-
-
-
 #define EXCLUDE_PIN_A4 (1U << 4)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -161,9 +135,9 @@ int Modifier_Bit[8] = {BIT_LCTL, BIT_LSFT, BIT_LALT, BIT_LGUI, BIT_RCTL, BIT_RSF
 
 uint8_t Modifier_Sum = 0b00000000;
 
-int LayerState = 0;
+uint32_t LayerState = 1;
 
-int WhichLayer[KEY_NUMBER] = {0};
+int FromWhichLayer[KEY_NUMBER] = { -1 };
 
 int TempKeycode = 0;
 
@@ -206,6 +180,7 @@ uint32_t changedPinI = 0;
 uint32_t CurrentTime = 0;
 
 
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -227,7 +202,7 @@ extern USBD_HandleTypeDef hUsbDeviceHS;
 
 
 // GPIO 상태를 스캔하고 변경된 핀 정보를 반환하는 함수
-MatrixScanResult MatrixScan() {
+MatrixScanResult MatrixScan(void) {
     // 이전 GPIO 상태를 static으로 유지
 
 
@@ -333,8 +308,8 @@ MatrixScanResult MatrixScan() {
 
         if ( CurrentTime - DebounceTimer[result.pinNumber] > DEBOUNCE_TIME )
         {
-        	Last_gpioC_state = gpioC_state;
-        	DebounceTimer[result.pinNumber] = CurrentTime;
+            Last_gpioC_state = gpioC_state;
+            DebounceTimer[result.pinNumber] = CurrentTime;
         }
         else
         {
@@ -490,6 +465,7 @@ MatrixScanResult MatrixScan() {
 			result.pinState = -1;
 		}
 		return result;
+        
 
         char message[100];
         sprintf(message, "E | pinNumber = %d | pinState = %d \n\r", result.pinNumber, result.pinState);
@@ -516,7 +492,12 @@ MatrixScanResult MatrixScan() {
 
 
 
-
+void KeyboardInit(void) {
+    for(int i=0; i<KEY_NUMBER; ++i) {
+        FromWhichLayer[i] = -1;
+    }
+    return;
+}
 
 
 
@@ -609,107 +590,124 @@ void KeycodeSend()
     HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 }
 
-void PressKeycodes(int i)
+int GetLayer(int SwitchIndex) 
+{   
+    uint8_t now = 31;
+    uint32_t mask=(uint32_t)1<<31;
+    while (now!=0)
+    {
+        if( (LayerState&mask) && Keycode[now][SwitchIndex]!=KC_TRNS)
+        {
+            break;
+        }
+        --now;
+        mask>>=1;
+    }
+    LayerState|=1; //레이어0이 혹시나 꺼졌을 경우 레이어 확인때 자동으로 켜지게
+    return now;
+}
+
+void TapDance(int tdindex, bool pressed)
 {
+    
+    return;
+}
 
-	if (Keycode[LayerState][i] >= HOLDTAP_SHIFTING)
+void PressSwitch(int SwitchIndex) {
+    int Layer = GetLayer(SwitchIndex);
+    FromWhichLayer[SwitchIndex] = Layer;
+    PressKeycode(Keycode[Layer][SwitchIndex]);
+    return;
+}
+
+void PressKeycode(uint16_t keycode)
+{
+    if (keycode==0||keycode==1) return;
+
+	if (IS_MOD(keycode))
 	{
-		KeyTimer = HAL_GetTick();
-
-		char message5[100];
-		sprintf(message5, "HoldTapPress = %d \n\r", Keycode[LayerState][i]);
-		HAL_UART_Transmit(&huart4, (uint8_t *)message5, strlen(message5), HAL_MAX_DELAY);
-	}
-	else if (IS_MOD(Keycode[LayerState][i]))
-	{ // MODIFIER
-		Modifier_Sum = Modifier_Sum | Modifier_Bit[Keycode[LayerState][i] - KC_MOD_MIN];
+		Modifier_Sum = Modifier_Sum | Modifier_Bit[keycode - KC_MOD_MIN];
 		keyboardReport.MODIFIER = Modifier_Sum;
 
 		char message1[100];
-		sprintf(message1, "ModifierPress = %d \n\r", Modifier_Bit[Keycode[LayerState][i] - KC_MOD_MIN]);
+		sprintf(message1, "ModifierPress = %d \n\r", Modifier_Bit[keycode - KC_MOD_MIN]);
 		HAL_UART_Transmit(&huart4, (uint8_t *)message1, strlen(message1), HAL_MAX_DELAY);
 	}
-	else if (IS_FN(Keycode[LayerState][i]) || IS_TD(Keycode[LayerState][i]))
+	else if (IS_FN(keycode) || IS_TD(keycode))
 	{
 
-		if ( IS_FN(Keycode[LayerState][i]) )
+		if ( IS_FN(keycode) )
 		{
-			LayerState = FN_TO_LAYER_NUMBER(Keycode[LayerState][i]); // Layer1 when pressed
+            LayerState|=(1<<FN_TO_LAYER_NUMBER(keycode));
 		}
-		else if ( IS_TD(Keycode[LayerState][i]))
+		else if ( IS_TD(keycode))
 		{
-			LayerState = TD_TO_LAYER_NUMBER(Keycode[LayerState][i]);
+			TapDance(TD_TO_INDEX(keycode), true/*pressed*/);
 		}
 		
 
 		char message1[100];
-		sprintf(message1, "Current Layer = %d \n\r", LayerState);
+		sprintf(message1, "Current Layer = %ld \n\r", LayerState);
 		HAL_UART_Transmit(&huart4, (uint8_t *)message1, strlen(message1), HAL_MAX_DELAY);
 	}
 	else
 	{
-		SetKeycode(Keycode[LayerState][i]);
-
-		WhichLayer[i] = LayerState;
+		SetKeycode(keycode);
 
 		char message4[100];
-		sprintf(message4, "PressKeycodes = %d \n\r", Keycode[LayerState][i]);
+		sprintf(message4, "PressKeycodes = %d \n\r", keycode);
 		HAL_UART_Transmit(&huart4, (uint8_t *)message4, strlen(message4), HAL_MAX_DELAY);
 	}
+
+    return;
 }
 
-void ReleaseKeycodes(int i)
-{
-    if (Keycode[LayerState][i] >= HOLDTAP_SHIFTING)
-    {
-        if (HAL_GetTick() - KeyTimer > HOLD_TIME)
-        {
-            TempKeycode = Keycode[LayerState + 1][i]; // Hold 작동시 다음 레이어에 있는 키코드 전송
-        }
-        else
-        {
-            TempKeycode = Keycode[LayerState][i] - HOLDTAP_MIN; // Tap 작동시 현재 레이어에 있는 키코드 -30000 전송
-        }
-        SetKeycode(TempKeycode);
-        KeycodeSend();
-        HAL_Delay(TAP_DELAY);
-        ResetKeycode(TempKeycode);
-        KeycodeSend();
-        HAL_Delay(TAP_DELAY);
 
-        char message5[100];
-        sprintf(message5, "HoldTapRelease = %d \n\r", Keycode[LayerState][i]);
-        HAL_UART_Transmit(&huart4, (uint8_t *)message5, strlen(message5), HAL_MAX_DELAY);
+void ReleaseSwitch(int SwitchIndex)
+{
+    int Layer = FromWhichLayer[SwitchIndex];
+    ReleaseKeycode(Keycode[Layer][SwitchIndex]);
+    FromWhichLayer[SwitchIndex] = -1;
+    return;
+}
+
+
+void ReleaseKeycode(uint16_t keycode)
+{
+    if (keycode==KC_NO || keycode==KC_TRNS)
+    {
+        return;
     }
-    else if (Keycode[LayerState][i] >= KC_MOD_MIN)
-    { // MODIFIER
-        Modifier_Sum = Modifier_Sum & ~(Modifier_Bit[Keycode[LayerState][i] - KC_MOD_MIN]);
+    
+    if (IS_MOD(keycode))
+    {
+        Modifier_Sum = Modifier_Sum & ~(MOD_TO_BIT(keycode));
         keyboardReport.MODIFIER = Modifier_Sum;
 
         char message2[100];
-        sprintf(message2, "ModifierRelease = %d\n\r", Keycode[LayerState][i]);
+        sprintf(message2, "ModifierRelease = %d\n\r", keycode);
         HAL_UART_Transmit(&huart4, (uint8_t *)message2, strlen(message2), HAL_MAX_DELAY);
     }
-    else if (Keycode[LayerState][i] >= KC_FN_MIN )
+    else if (IS_FN(keycode))
     {
-    	if ( Keycode[LayerState][i] == FN(1) )
-    	{
-            LayerState = 0; // Layer0 when released
-            char message1[100];
-            sprintf(message1, "Current Layer = %d \n\r", LayerState);
-            HAL_UART_Transmit(&huart4, (uint8_t *)message1, strlen(message1), HAL_MAX_DELAY);
-    	}
+        LayerState &= (~(1<<FN_TO_LAYER_NUMBER(keycode)));
+        LayerState |= 1; //레이어0은 항상 on
+    }
+    else if (IS_TD(keycode))
+    {
+        TapDance(TD_TO_INDEX(keycode), false/*released*/);
     }
     else
     {
-        TempKeycode = Keycode[WhichLayer[i]][i];
 
-        ResetKeycode(TempKeycode);
+        ResetKeycode(keycode);
 
         char message5[100];
-        sprintf(message5, "ReleaseKeycodes = %d \n\r", TempKeycode);
+        sprintf(message5, "ReleaseKeycodes = %d \n\r", keycode);
         HAL_UART_Transmit(&huart4, (uint8_t *)message5, strlen(message5), HAL_MAX_DELAY);
     }
+
+    return;
 
 }
 
@@ -756,6 +754,8 @@ int main(void)
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
+  KeyboardInit();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -768,7 +768,7 @@ int main(void)
         if (CurrentTime - LastTimer >= 10000)
         {
             char message[100];
-            sprintf(message, "Time(ms) = %d |  Scanrate(Hz) = %d \n\r", CurrentTime, Scanrate / 10);
+            sprintf(message, "Time(ms) = %ld |  Scanrate(Hz) = %d \n\r", CurrentTime, Scanrate / 10);
             HAL_UART_Transmit(&huart4, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
 
             LastTimer = HAL_GetTick();
@@ -785,12 +785,12 @@ int main(void)
         {
 			if ( Matrix.pinState == 1)
 			{
-				PressKeycodes(Matrix.pinNumber);
+				PressSwitch(Matrix.pinNumber);
 				KeycodeSend();
 			}
 			else
 			{
-				ReleaseKeycodes(Matrix.pinNumber);
+				ReleaseSwitch(Matrix.pinNumber);
 				KeycodeSend();
 			}
 
