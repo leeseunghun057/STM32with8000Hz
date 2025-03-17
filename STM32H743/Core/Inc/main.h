@@ -96,10 +96,10 @@ extern "C" {
 #define IS_MOD(keycode) ((keycode>=KC_MOD_MIN)&&(keycode<=KC_MOD_MAX))
 #define MOD_TO_BIT(keycode) (1 << (keycode-KC_MOD_MIN))
 
-#define KC_FN_MIN 0x5000
-#define KC_FN_MAX 0x50FF // layer1 when press
-#define KC_TD_MIN 0x5100 // switch layer to 0
-#define KC_TD_MAX 0x51FF // switch layer to 1
+#define KC_FN_MIN 0x5000 // turn on layer when held
+#define KC_FN_MAX 0x50FF 
+#define KC_TD_MIN 0x5100 // tap dance
+#define KC_TD_MAX 0x51FF 
 #define FN(layernumber) (KC_FN_MIN+layernumber)
 #define FN_TO_LAYER_NUMBER(fnx) (fnx-KC_FN_MIN)
 #define IS_FN(keycode) ((keycode>=KC_FN_MIN)&&(keycode<=KC_FN_MAX))

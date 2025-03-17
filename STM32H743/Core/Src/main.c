@@ -486,21 +486,7 @@ MatrixScanResult MatrixScan(void) {
 
     }
 
-
-
-
-
-
     return result;
-
-
-
-
-
-
-
-
-
 }
 
 
@@ -521,7 +507,7 @@ void KeyboardInit(void) {
 
 void SetKeycode(int keycode)
 {   
-    if (keycode == keyboardReport.Keycode1)
+    if (keycode == keyboardReport.Keycode1 || keycode == keyboardReport.Keycode2 || keycode == keyboardReport.Keycode3 || keycode == keyboardReport.Keycode4 || keycode == keyboardReport.Keycode5 || keycode == keyboardReport.Keycode6)
     {
         return;
     }
@@ -529,46 +515,27 @@ void SetKeycode(int keycode)
     {
         keyboardReport.Keycode1 = keycode;
     }
-    else if (keycode == keyboardReport.Keycode2)
-    {
-        return;
-    }
     else if (keyboardReport.Keycode2 == 0x00)
     {
         keyboardReport.Keycode2 = keycode;
-    }
-    else if (keycode == keyboardReport.Keycode3)
-    {
-        return;
     }
     else if (keyboardReport.Keycode3 == 0x00)
     {
         keyboardReport.Keycode3 = keycode;
     }
-    else if (keycode == keyboardReport.Keycode4)
-    {
-        return;
-    }
     else if (keyboardReport.Keycode4 == 0x00)
     {
         keyboardReport.Keycode4 = keycode;
-    }
-    else if (keycode == keyboardReport.Keycode5)
-    {
-        return;
     }
     else if (keyboardReport.Keycode5 == 0x00)
     {
         keyboardReport.Keycode5 = keycode;
     }
-    else if (keycode == keyboardReport.Keycode6)
-    {
-        return;
-    }
     else if (keyboardReport.Keycode6 == 0x00)
     {
         keyboardReport.Keycode6 = keycode;
     }
+    return;
 }
 
 void ResetKeycode(int keycode)
@@ -677,7 +644,7 @@ void TapDanceTask(void) {
         // do tap dance things
         switch(CurrentTapDance.dance_index) {
             case 1: {
-                if (CurrentTapDance.pressed) {
+                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
                     PressKeycode(KC_B);
                 }else {
                     PressKeycode(KC_A);
@@ -716,7 +683,6 @@ void PressKeycode(uint16_t keycode)
     if (CurrentTapDance.dance_index!=-1 && ((!IS_TD(keycode))||(CurrentTapDance.dance_index!=TD_TO_INDEX(keycode)))) {
         CurrentTapDance.activated = true;
         TapDanceTask();
-        
     }
 
 	if (IS_MOD(keycode))
