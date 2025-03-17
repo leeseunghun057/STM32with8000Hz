@@ -47,6 +47,8 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
+#define TAPPING_TERM 250
+
 #define HOLDTAP_SHIFTING 0x5000
 #define HOLDTAP_MIN 0x5000
 
