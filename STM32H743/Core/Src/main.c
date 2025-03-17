@@ -51,6 +51,14 @@ typedef struct {
     uint8_t pinState; // 핀의 현재 상태 (HIGH: 1, LOW: 0)
 } MatrixScanResult;
 
+typedef struct {
+    int dance_index;
+    bool pressed;
+    int count;
+    bool activated;
+    int last_pressed;
+} TapDanceState;
+
 
 MatrixScanResult MatrixScan(void);
 void KeyboardInit(void);
@@ -59,12 +67,15 @@ void ResetKeycode(int keycode);
 void KeycodeSend();
 int GetLayer(int SwitchIndex);
 void TapDance(int tdindex, bool pressed);
+void TapDanceTask(void);
 void PressSwitch(int SwitchIndex);
 void PressKeycode(uint16_t keycode);
 void ReleaseSwitch(int SwitchIndex);
 void ReleaseKeycode(uint16_t keycode);
 
 HID_SendKeycode keyboardReport = {0};
+
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -179,6 +190,7 @@ uint32_t changedPinI = 0;
 
 uint32_t CurrentTime = 0;
 
+TapDanceState CurrentTapDance;
 
 
 /* USER CODE END PV */
@@ -196,6 +208,7 @@ static void MX_UART4_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 extern USBD_HandleTypeDef hUsbDeviceHS;
+
 
 
 
@@ -496,6 +509,11 @@ void KeyboardInit(void) {
     for(int i=0; i<KEY_NUMBER; ++i) {
         FromWhichLayer[i] = -1;
     }
+    CurrentTapDance.dance_index = -1;
+    CurrentTapDance.pressed = false;
+    CurrentTapDance.count = 0;
+    CurrentTapDance.activated = false;
+    CurrentTapDance.last_pressed = 0;
     return;
 }
 
@@ -593,23 +611,92 @@ void KeycodeSend()
 int GetLayer(int SwitchIndex) 
 {   
     uint8_t now = 31;
-    uint32_t mask=(uint32_t)1<<31;
     while (now!=0)
     {
-        if( (LayerState&mask) && Keycode[now][SwitchIndex]!=KC_TRNS)
+        if( (LayerState&(1<<now)) && (Keycode[now][SwitchIndex]!=KC_TRNS))
         {
             break;
         }
         --now;
-        mask>>=1;
     }
     LayerState|=1; //레이어0이 혹시나 꺼졌을 경우 레이어 확인때 자동으로 켜지게
     return now;
 }
 
+
 void TapDance(int tdindex, bool pressed)
 {
-    
+    if (pressed) {
+        if (CurrentTapDance.dance_index == -1) {
+            CurrentTapDance.dance_index = tdindex;
+            CurrentTapDance.pressed = pressed;
+            CurrentTapDance.count = 1;
+            CurrentTapDance.activated = false;
+            CurrentTapDance.last_pressed = CurrentTime;
+            return;
+        }
+
+        CurrentTapDance.pressed = pressed;
+        CurrentTapDance.count++;
+        CurrentTapDance.activated = false;
+        CurrentTapDance.last_pressed = CurrentTime;
+        return;
+
+    }else {
+        if (CurrentTapDance.last_pressed>=TAPPING_TERM) {
+            switch(CurrentTapDance.dance_index) {
+                case 1: {
+                    ReleaseKeycode(KC_B);
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+            CurrentTapDance.dance_index = -1;
+            CurrentTapDance.activated = false;
+            CurrentTapDance.count = 0;
+            CurrentTapDance.pressed = false;
+        }
+        CurrentTapDance.pressed = pressed;
+        return;
+    }
+    return;
+}
+
+void TapDanceTask(void) {
+    if (CurrentTapDance.dance_index == -1) {
+        return;
+    }
+
+    if (CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
+        CurrentTapDance.activated = true;
+    }
+
+    if (CurrentTapDance.activated) {
+        // do tap dance things
+        switch(CurrentTapDance.dance_index) {
+            case 1: {
+                if (CurrentTapDance.pressed) {
+                    PressKeycode(KC_B);
+                }else {
+                    PressKeycode(KC_A);
+                    KeycodeSend();
+                    HAL_DELAY(TAP_DELAY);
+                    ReleaseKeycode(KC_A);
+                    KeycodeSend();
+                }
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+        CurrentTapDance.dance_index = -1;
+        CurrentTapDance.activated = false;
+        CurrentTapDance.count = 0;
+        CurrentTapDance.pressed = false;
+    }
     return;
 }
 
@@ -623,6 +710,14 @@ void PressSwitch(int SwitchIndex) {
 void PressKeycode(uint16_t keycode)
 {
     if (keycode==0||keycode==1) return;
+
+
+    // 탭댄스 중에 다른 키 입력이 들어왔을 때 선입력된 탭댄스 발동 후에 키 처리
+    if (CurrentTapDance.dance_index!=-1 && ((!IS_TD(keycode))||(CurrentTapDance.dance_index!=TD_TO_INDEX(keycode)))) {
+        CurrentTapDance.activated = true;
+        TapDanceTask();
+        
+    }
 
 	if (IS_MOD(keycode))
 	{
@@ -795,6 +890,8 @@ int main(void)
 			}
 
         }
+
+        TapDanceTask();
 
 //        char message[100];
 //        sprintf(message, "Test \n\r");
