@@ -32,6 +32,48 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+#define KEY_NUMBER 16*9
+#define HOLD_TIME 200 // (ms)
+#define DEBOUNCE_TIME 5 // (ms)
+#define TAP_DELAY 50 // (us)
+
+// Keycode are in main.h
+
+#define BIT_LCTL 0b00000001
+#define BIT_LSFT 0b00000010
+#define BIT_LALT 0b00000100
+#define BIT_LGUI 0b00001000
+#define BIT_RCTL 0b00010000
+#define BIT_RSFT 0b00100000
+#define BIT_RALT 0b01000000
+#define BIT_RGUI 0b10000000
+
+#define EXCLUDE_PIN_A4 (1U << 4)
+
+#define COMBO_MAX_LENGTH 10
+#define COMBO_NUMBER 1
+#define COMBO_TIME 50
+
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+UART_HandleTypeDef huart4;
+
+/* USER CODE BEGIN PV */
+
 typedef struct
 {
     uint8_t MODIFIER;
@@ -59,6 +101,12 @@ typedef struct {
     int last_pressed;
 } TapDanceState;
 
+typedef struct {
+    int trigger_key_num;
+    uint16_t trigger_keys[COMBO_MAX_LENGTH];
+    bool trigger_pressed[COMBO_MAX_LENGTH];
+    uint16_t keycode;
+} Combo;
 
 MatrixScanResult MatrixScan(void);
 void KeyboardInit(void);
@@ -80,49 +128,13 @@ void ReleaseKeycode(uint16_t keycode);
 HID_SendKeycode keyboardReport = {0};
 
 
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-#define KEY_NUMBER 16*9
-#define HOLD_TIME 200 // (ms)
-#define DEBOUNCE_TIME 5 // (ms)
-#define TAP_DELAY 50 // (us)
-
-// Keycode are in main.h
-
-#define BIT_LCTL 0b00000001
-#define BIT_LSFT 0b00000010
-#define BIT_LALT 0b00000100
-#define BIT_LGUI 0b00001000
-#define BIT_RCTL 0b00010000
-#define BIT_RSFT 0b00100000
-#define BIT_RALT 0b01000000
-#define BIT_RGUI 0b10000000
-
-#define EXCLUDE_PIN_A4 (1U << 4)
-
-
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-UART_HandleTypeDef huart4;
-
-/* USER CODE BEGIN PV */
 GPIO_PinState pinState;
 
 int Scanrate = 0; // GPIO 읽기 카운트
 
-int Timer = 0; // 경과 시간 (ms)
+uint32_t Timer = 0; // 경과 시간 (ms)
 
-int LastTimer = 0;
+uint32_t LastTimer = 0;
 
 GPIO_TypeDef *GPIO_ABC[KEY_NUMBER] = {GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD };
 
@@ -154,11 +166,11 @@ uint32_t LayerState = 1;
 
 int FromWhichLayer[KEY_NUMBER] = { -1 };
 
-int TempKeycode = 0;
+uint16_t TempKeycode = 0;
 
 char UART_message[100];
 
-int KeyTimer = 0;
+uint32_t KeyTimer = 0;
 
 uint32_t DebounceTimer[128] = { 0 };
 
@@ -195,6 +207,10 @@ uint32_t changedPinI = 0;
 uint32_t CurrentTime = 0;
 
 TapDanceState CurrentTapDance;
+
+Combo combo_list[COMBO_NUMBER] = {{2, {KC_B, KC_C}, {false, false}, false, KC_D}};
+uint16_t combo_pressed_keys[KEY_NUMBER] = {0};
+uint32_t last_combo_pressed = 0;
 
 
 /* USER CODE END PV */
@@ -670,23 +686,6 @@ void TapDanceTask(void) {
     }
     return;
 }
-#define COMBO_LENGTH 10
-#define COMBO_NUMBER 1
-#define COMBO_KEYS 2
-#define COMBO_TIME 50
-
-
-typedef struct {
-    int trigger_key_num;
-    uint16_t trigger_keys[COMBO_LENGTH];
-    bool trigger_pressed[COMBO_LENGTH];
-    bool activated;
-    uint16_t keycode;
-} Combo;
-
-Combo combo_list[COMBO_NUMBER] = {{2, {KC_B, KC_C}, {false, false}, false, KC_D}};
-uint16_t combo_pressed_keys[KEY_NUMBER] = {0};
-int last_combo_pressed = 0;
 
 bool TryComboPress(uint16_t keycode) {
     bool is_combo_key = false;
@@ -704,7 +703,7 @@ bool TryComboPress(uint16_t keycode) {
     #else // not COMBO_STRICT_ORDER
     int pressed_combo_keys_num = 0;
     
-    while (pressed_combo_keys_num<COMBO_KEYS && combo_pressed_keys[pressed_combo_keys_num]!=0) ++pressed_combo_keys_num;
+    while (pressed_combo_keys_num<COMBO_MAX_LENGTH && combo_pressed_keys[pressed_combo_keys_num]!=0) ++pressed_combo_keys_num;
     
     for (int i=0; i<COMBO_NUMBER; ++i) {
         if (combo_list[i].trigger_key_num>pressed_combo_keys_num) continue;
@@ -725,7 +724,7 @@ bool TryComboPress(uint16_t keycode) {
     #endif // COMBO_STRICT_ORDER
     if (is_combo_key) {
         last_combo_pressed = HAL_GetTick();
-        for (int i=0; i<COMBO_LENGTH; ++i) {
+        for (int i=0; i<COMBO_MAX_LENGTH; ++i) {
             if (combo_pressed_keys[i]==0) {
                 combo_pressed_keys[i] = keycode;
                 break;
@@ -739,16 +738,14 @@ bool TryComboPress(uint16_t keycode) {
 void RegisterCombo(void) {
 #ifdef COMBO_STRICT_ORDER
     for (int i=0; i<COMBO_NUMBER; ++i) {
-        if (combo_list[i].activated) continue;
         if (combo_list[i].trigger_pressed[combo_list[i].trigger_key_num]) {
             PressKeycode(combo_list[i].keycode);
-            combo_list[i].activated = true;
+            for (int j=0; j<COMBO_MAX_LENGTH; ++j) combo_pressed_keys[j] = 0;
         }
     }
     return;
 #else // not COMBO_STRICT_ORDER
     for (int i=0; i<COMBO_NUMBER; ++i) {
-        if (combo_list[i].activated) continue;
         bool trigger = true;
         for (int j=0; j<combo_list[i].trigger_key_num; ++j) {
             if (!combo_list[i].trigger_pressed[j]) {
@@ -758,7 +755,7 @@ void RegisterCombo(void) {
         }
         if (trigger) {
             PressKeycode(combo_list[i].keycode);
-            combo_list[i].activated = true;
+            for (int j=0; j<COMBO_MAX_LENGTH; ++j) combo_pressed_keys[j] = 0;
         }
 
     }
@@ -767,7 +764,7 @@ void RegisterCombo(void) {
 }
 
 void ComboTask(void) {
-    int now=HAL_GetTick();
+    uint32_t now=HAL_GetTick();
     if (now-last_combo_pressed>COMBO_TIME) {
         for (int i=0; i<KEY_NUMBER; ++i) {
             if (combo_pressed_keys[i]!=0) {
