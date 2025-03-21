@@ -68,10 +68,14 @@ void KeycodeSend();
 int GetLayer(int SwitchIndex);
 void TapDance(int tdindex, bool pressed);
 void TapDanceTask(void);
+bool TryComboPress(uint16_t keycode);
+void RegisterCombo(void);
+void ComboTask(void);
 void PressSwitch(int SwitchIndex);
 void PressKeycode(uint16_t keycode);
 void ReleaseSwitch(int SwitchIndex);
 void ReleaseKeycode(uint16_t keycode);
+
 
 HID_SendKeycode keyboardReport = {0};
 
@@ -649,7 +653,7 @@ void TapDanceTask(void) {
                 }else {
                     PressKeycode(KC_A);
                     KeycodeSend();
-                    HAL_DELAY(TAP_DELAY);
+                    HAL_Delay(TAP_DELAY);
                     ReleaseKeycode(KC_A);
                     KeycodeSend();
                 }
@@ -666,11 +670,124 @@ void TapDanceTask(void) {
     }
     return;
 }
+#define COMBO_LENGTH 10
+#define COMBO_NUMBER 1
+#define COMBO_KEYS 2
+#define COMBO_TIME 50
+
+
+typedef struct {
+    int trigger_key_num;
+    uint16_t trigger_keys[COMBO_LENGTH];
+    bool trigger_pressed[COMBO_LENGTH];
+    bool activated;
+    uint16_t keycode;
+} Combo;
+
+Combo combo_list[COMBO_NUMBER] = {{2, {KC_B, KC_C}, {false, false}, false, KC_D}};
+uint16_t combo_pressed_keys[KEY_NUMBER] = {0};
+int last_combo_pressed = 0;
+
+bool TryComboPress(uint16_t keycode) {
+    bool is_combo_key = false;
+    #ifdef COMBO_STRICT_ORDER
+    for (int i=0; i<COMBO_NUMBER; ++i) {
+        for (int j==0; j<combo_list[i].trigger_key_num; ++j) {
+            if (combo_list[i].trigger_pressed[j]) continue;
+            if (combo_list[i].trigger_keys[j] == keycode) {
+                is_combo_key = true;
+                combo_list[i].trigger_pressed[j] = true;
+            }
+            break;
+        }
+    }
+    #else // not COMBO_STRICT_ORDER
+    int pressed_combo_keys_num = 0;
+    
+    while (pressed_combo_keys_num<COMBO_KEYS && combo_pressed_keys[pressed_combo_keys_num]!=0) ++pressed_combo_keys_num;
+    
+    for (int i=0; i<COMBO_NUMBER; ++i) {
+        if (combo_list[i].trigger_key_num>pressed_combo_keys_num) continue;
+        
+        is_combo_key = false;
+        for (int j=0; j<pressed_combo_keys_num; ++j) {
+            bool exist_in_list = false;
+            for (int k=0; k<combo_list[i].trigger_key_num; ++k) {
+                if (combo_list[i].trigger_keys[k]==combo_pressed_keys[j]) {
+                    exist_in_list=true;
+                    combo_list[i].trigger_pressed[k] = true;
+                    break;
+                }
+            }
+            is_combo_key |= exist_in_list;
+        }
+    }
+    #endif // COMBO_STRICT_ORDER
+    if (is_combo_key) {
+        last_combo_pressed = HAL_GetTick();
+        for (int i=0; i<COMBO_LENGTH; ++i) {
+            if (combo_pressed_keys[i]==0) {
+                combo_pressed_keys[i] = keycode;
+                break;
+            }
+        }
+        RegisterCombo();
+    }
+    return is_combo_key;
+}
+
+void RegisterCombo(void) {
+#ifdef COMBO_STRICT_ORDER
+    for (int i=0; i<COMBO_NUMBER; ++i) {
+        if (combo_list[i].activated) continue;
+        if (combo_list[i].trigger_pressed[combo_list[i].trigger_key_num]) {
+            PressKeycode(combo_list[i].keycode);
+            combo_list[i].activated = true;
+        }
+    }
+    return;
+#else // not COMBO_STRICT_ORDER
+    for (int i=0; i<COMBO_NUMBER; ++i) {
+        if (combo_list[i].activated) continue;
+        bool trigger = true;
+        for (int j=0; j<combo_list[i].trigger_key_num; ++j) {
+            if (!combo_list[i].trigger_pressed[j]) {
+                trigger = false;
+                break;
+            }
+        }
+        if (trigger) {
+            PressKeycode(combo_list[i].keycode);
+            combo_list[i].activated = true;
+        }
+
+    }
+    return;
+#endif // COMBO_STRICT_ORDER
+}
+
+void ComboTask(void) {
+    int now=HAL_GetTick();
+    if (now-last_combo_pressed>COMBO_TIME) {
+        for (int i=0; i<KEY_NUMBER; ++i) {
+            if (combo_pressed_keys[i]!=0) {
+                PressKeycode(combo_pressed_keys[i]);
+                combo_pressed_keys[i] = 0;
+                KeycodeSend();
+                HAL_Delay(TAP_DELAY);
+            }
+        }
+    }
+    return;
+}
 
 void PressSwitch(int SwitchIndex) {
-    int Layer = GetLayer(SwitchIndex);
-    FromWhichLayer[SwitchIndex] = Layer;
-    PressKeycode(Keycode[Layer][SwitchIndex]);
+    int layer = GetLayer(SwitchIndex);
+    FromWhichLayer[SwitchIndex] = layer;
+    if(TryComboPress(Keycode[layer][SwitchIndex])) {
+        return;
+    }
+    PressKeycode(Keycode[layer][SwitchIndex]);
     return;
 }
 
@@ -678,6 +795,11 @@ void PressKeycode(uint16_t keycode)
 {
     if (keycode==0||keycode==1) return;
 
+    // 콤보 가능성 없는 키가 들어오면 콤보가 깨지도록
+    if (combo_pressed_keys[0] != 0) {
+        last_combo_pressed = 0;
+        ComboTask();
+    }
 
     // 탭댄스 중에 다른 키 입력이 들어왔을 때 선입력된 탭댄스 발동 후에 키 처리
     if (CurrentTapDance.dance_index!=-1 && ((!IS_TD(keycode))||(CurrentTapDance.dance_index!=TD_TO_INDEX(keycode)))) {
@@ -716,7 +838,7 @@ void PressKeycode(uint16_t keycode)
 		SetKeycode(keycode);
 
 		char message4[100];
-		sprintf(message4, "PressKeycodes = %d \n\r", keycode);
+		sprintf(message4, "PressKeycode = %d \n\r", keycode);
 		HAL_UART_Transmit(&huart4, (uint8_t *)message4, strlen(message4), HAL_MAX_DELAY);
 	}
 
@@ -726,8 +848,8 @@ void PressKeycode(uint16_t keycode)
 
 void ReleaseSwitch(int SwitchIndex)
 {
-    int Layer = FromWhichLayer[SwitchIndex];
-    ReleaseKeycode(Keycode[Layer][SwitchIndex]);
+    int layer = FromWhichLayer[SwitchIndex];
+    ReleaseKeycode(Keycode[layer][SwitchIndex]);
     FromWhichLayer[SwitchIndex] = -1;
     return;
 }
@@ -738,6 +860,11 @@ void ReleaseKeycode(uint16_t keycode)
     if (keycode==KC_NO || keycode==KC_TRNS)
     {
         return;
+    }
+
+    if (combo_pressed_keys[0] != 0) {
+        last_combo_pressed = 0;
+        ComboTask();
     }
     
     if (IS_MOD(keycode))
@@ -764,7 +891,7 @@ void ReleaseKeycode(uint16_t keycode)
         ResetKeycode(keycode);
 
         char message5[100];
-        sprintf(message5, "ReleaseKeycodes = %d \n\r", keycode);
+        sprintf(message5, "ReleaseKeycode = %d \n\r", keycode);
         HAL_UART_Transmit(&huart4, (uint8_t *)message5, strlen(message5), HAL_MAX_DELAY);
     }
 
@@ -858,6 +985,7 @@ int main(void)
         }
 
         TapDanceTask();
+        ComboTask();
 
 //        char message[100];
 //        sprintf(message, "Test \n\r");
