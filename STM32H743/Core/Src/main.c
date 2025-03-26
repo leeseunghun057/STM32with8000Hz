@@ -117,13 +117,13 @@ int GetLayer(int SwitchIndex);
 void TapDance(int tdindex, bool pressed);
 void TapDanceTask(void);
 bool TryComboPress(uint16_t keycode);
-void RegisterCombo(void);
+void TryRegisterCombo(void);
 void ComboTask(void);
 void PressSwitch(int SwitchIndex);
 void PressKeycode(uint16_t keycode);
 void ReleaseSwitch(int SwitchIndex);
 void ReleaseKeycode(uint16_t keycode);
-void HouseKeepingTask (void);
+void HousekeepingTask (void);
 
 HID_SendKeycode keyboardReport = {0};
 
@@ -158,9 +158,9 @@ uint16_t Keycode[][KEY_NUMBER] = {
     }
 };
 
-int Modifier_Bit[8] = {BIT_LCTL, BIT_LSFT, BIT_LALT, BIT_LGUI, BIT_RCTL, BIT_RSFT, BIT_RALT, BIT_RGUI};
+int ModifierBit[8] = {BIT_LCTL, BIT_LSFT, BIT_LALT, BIT_LGUI, BIT_RCTL, BIT_RSFT, BIT_RALT, BIT_RGUI};
 
-uint8_t Modifier_Sum = 0b00000000;
+uint8_t ModifierSum = 0b00000000;
 
 uint32_t LayerState = 1;
 
@@ -727,7 +727,7 @@ bool TryComboPress(uint16_t keycode) {
     return is_combo_key;
 }
 
-void RegisterCombo(void) {
+void TryRegisterCombo(void) {
 #ifdef COMBO_STRICT_ORDER
     for (int i=0; i<COMBO_NUMBER; ++i) {
         if (combo_list[i].trigger_pressed[combo_list[i].trigger_key_num]) {
@@ -795,7 +795,7 @@ void PressSwitch(int SwitchIndex) {
                 break;
             }
         }
-        RegisterCombo();
+        TryRegisterCombo();
         return;
     }
     
@@ -821,11 +821,11 @@ void PressKeycode(uint16_t keycode)
 
 	if (IS_MOD(keycode))
 	{
-		Modifier_Sum = Modifier_Sum | Modifier_Bit[keycode - KC_MOD_MIN];
-		keyboardReport.MODIFIER = Modifier_Sum;
+		ModifierSum = ModifierSum | ModifierBit[keycode - KC_MOD_MIN];
+		keyboardReport.MODIFIER = ModifierSum;
 
 		char message1[100];
-		sprintf(message1, "ModifierPress = %d \n\r", Modifier_Bit[keycode - KC_MOD_MIN]);
+		sprintf(message1, "ModifierPress = %d \n\r", ModifierBit[keycode - KC_MOD_MIN]);
 		HAL_UART_Transmit(&huart4, (uint8_t *)message1, strlen(message1), HAL_MAX_DELAY);
 	}
 	else if (IS_FN(keycode) || IS_TD(keycode))
@@ -881,8 +881,8 @@ void ReleaseKeycode(uint16_t keycode)
     
     if (IS_MOD(keycode))
     {
-        Modifier_Sum = Modifier_Sum & ~(MOD_TO_BIT(keycode));
-        keyboardReport.MODIFIER = Modifier_Sum;
+        ModifierSum = ModifierSum & ~(MOD_TO_BIT(keycode));
+        keyboardReport.MODIFIER = ModifierSum;
 
         char message2[100];
         sprintf(message2, "ModifierRelease = %d\n\r", keycode);
@@ -911,7 +911,7 @@ void ReleaseKeycode(uint16_t keycode)
 
 }
 
-void HouseKeepingTask (void) {
+void HousekeepingTask (void) {
     TapDanceTask();
     ComboTask();
     return;
@@ -1000,7 +1000,7 @@ int main(void)
 
         }
 
-        HouseKeepingTask();
+        HousekeepingTask();
 
 //        char message[100];
 //        sprintf(message, "Test \n\r");
