@@ -42,6 +42,7 @@
 #define HOLD_TIME 200 // (ms)
 #define DEBOUNCE_TIME 5 // (ms)
 #define TAP_DELAY 50 // (us)
+#define TAP_DANCE_NUMBER 39
 
 // Keycode are in main.h
 
@@ -114,6 +115,8 @@ void KeycodeSend();
 void LayerOn(int layer);
 void LayerOff(int layer);
 int GetLayer(int SwitchIndex);
+void ReleaseTapDanceLT(int layer, uint16_t keycode, int tdindex);
+void ReleaseTapDanceMT(uint16_t modkeycode, uint16_t keycode, int tdindex);
 void TapDance(int tdindex, bool pressed);
 void TapDanceTask(void);
 bool TryComboPress(uint16_t keycode);
@@ -216,11 +219,14 @@ Combo combo_list[COMBO_NUMBER] = {{2, {KC_B, KC_C}, {false, false}, KC_D}};
 uint16_t combo_pressed_keys[KEY_NUMBER] = {0};
 uint32_t last_combo_pressed = 0;
 
-int Matrix[] = { PIN(GPIO_B, GPIO_4),  PIN(GPIO_B, GPIO_3),  PIN(GPIO_A, GPIO_15), PIN(GPIO_A, GPIO_14), PIN(GPIO_A, GPIO_13), PIN(GPIO_B, GPIO_13), PIN(GPIO_B, GPIO_12), PIN(GPIO_B, GPIO_11), PIN(GPIO_B, GPIO_10), PIN(GPIO_B, GPIO_2),
-                 PIN(GPIO_B, GPIO_5),  PIN(GPIO_B, GPIO_6),  PIN(GPIO_B, GPIO_9),  PIN(GPIO_B, GPIO_8),  PIN(GPIO_B, GPIO_7),  PIN(GPIO_A, GPIO_5),  PIN(GPIO_A, GPIO_6),  PIN(GPIO_A, GPIO_7),  PIN(GPIO_B, GPIO_0),  PIN(GPIO_B, GPIO_1),
-                 PIN(GPIO_C, GPIO_13), PIN(GPIO_C, GPIO_14), PIN(GPIO_C, GPIO_15), PIN(GPIO_F, GPIO_0),  PIN(GPIO_F, GPIO_1),  PIN(GPIO_A, GPIO_0),  PIN(GPIO_A, GPIO_1),  PIN(GPIO_A, GPIO_2),  PIN(GPIO_A, GPIO_3),  PIN(GPIO_A, GPIO_4)};
+int Matrix[KEY_NUMBER] = { PIN(GPIO_B, GPIO_4),  PIN(GPIO_B, GPIO_3),  PIN(GPIO_A, GPIO_15), PIN(GPIO_A, GPIO_14), PIN(GPIO_A, GPIO_13), PIN(GPIO_B, GPIO_13), PIN(GPIO_B, GPIO_12), PIN(GPIO_B, GPIO_11), PIN(GPIO_B, GPIO_10), PIN(GPIO_B, GPIO_2),
+                           PIN(GPIO_B, GPIO_5),  PIN(GPIO_B, GPIO_6),  PIN(GPIO_B, GPIO_9),  PIN(GPIO_B, GPIO_8),  PIN(GPIO_B, GPIO_7),  PIN(GPIO_A, GPIO_5),  PIN(GPIO_A, GPIO_6),  PIN(GPIO_A, GPIO_7),  PIN(GPIO_B, GPIO_0),  PIN(GPIO_B, GPIO_1),
+                           PIN(GPIO_C, GPIO_13), PIN(GPIO_C, GPIO_14), PIN(GPIO_C, GPIO_15), PIN(GPIO_F, GPIO_0),  PIN(GPIO_F, GPIO_1),  PIN(GPIO_A, GPIO_0),  PIN(GPIO_A, GPIO_1),  PIN(GPIO_A, GPIO_2),  PIN(GPIO_A, GPIO_3),  PIN(GPIO_A, GPIO_4)};
 int PinMap[PIN_NUMBER] = {0};
 
+uint32_t TapDanceTimer[TAP_DANCE_NUMBER] = {0};
+int TapDanceCounter[TAP_DANCE_NUMBER] = {0};
+bool TapDancePressed[TAP_DANCE_NUMBER] = {false};
 
 /* USER CODE END PV */
 
@@ -514,7 +520,7 @@ void ResetKeycode(int keycode)
 
 void KeycodeSend()
 {
-    USBD_HID_SendReport(&hUsbDeviceH/S, (uint8_t *)&keyboardReport, sizeof(keyboardReport));
+    USBD_HID_SendReport(&hUsbDeviceHS, (uint8_t *)&keyboardReport, sizeof(keyboardReport));
 
     return;
 }
@@ -548,577 +554,725 @@ int GetLayer(int SwitchIndex)
     return now;
 }
 
+void ReleaseTapDanceLT(int layer, uint16_t keycode, int tdindex) {
+    if (TapDanceCounter[tdindex]>=2) {
+        ReleaseKeycode(keycode);
+    }else{
+        LayerOff(layer);
+    }
+    return;
+}
+
+void ReleaseTapDanceMT(uint16_t modkeycode, uint16_t keycode, int tdindex) {
+    if (TapDanceCounter[tdindex]>=2) {
+        ReleaseKeycode(keycode);
+    }else{
+        ReleaseKeycode(modkeycode);
+    }
+    return;
+}
 
 void TapDance(int tdindex, bool pressed)
 {
     if (pressed) {
-        if (CurrentTapDance.dance_index == -1) {
-            CurrentTapDance.dance_index = tdindex;
-            CurrentTapDance.pressed = pressed;
-            CurrentTapDance.count = 1;
-            CurrentTapDance.activated = false;
-            CurrentTapDance.last_pressed = CurrentTime;
-            return;
-        }
-
-        if ( CurrentTapDance.dance_index != tdindex) {
-            CurrentTapDance.activated = true;
-            TapDanceTask();
-            CurrentTapDance.dance_index = tdindex;
-            CurrentTapDance.pressed = pressed;
-            CurrentTapDance.count = 1;
-            CurrentTapDance.activated = false;
-            CurrentTapDance.last_pressed = CurrentTime;
-        }
-
-        CurrentTapDance.pressed = pressed;
-        CurrentTapDance.count++;
-        CurrentTapDance.activated = false;
-        CurrentTapDance.last_pressed = CurrentTime;
+        TapDanceTimer[tdindex] = CurrentTime;
+        ++TapDanceCounter[tdindex];
+        TapDancePressed[tdindex] = pressed;
         return;
 
     }else {
         // tap의 release의 경우 뗌 시점이 아니라 tapping term이 끝날때 결정되므로 TapDancteTask에서 해결
-        if (CurrentTime-CurrentTapDance.last_pressed>=TAPPING_TERM) {
+        if (CurrentTime-TapDanceTimer[tdindex]>=TAPPING_TERM) {
             // Hold시의 release
             switch(tdindex) {
-                case 1: LayerOff(2); break;
-                case 2: LayerOff(3); break;
-                case 3: LayerOff(3); break;
-                case 4: LayerOff(2); break;
-                case 5: ReleaseKeycode(KC_LGUI); break;
-                case 6: ReleaseKeycode(KC_LSFT); break;
-                case 7: ReleaseKeycode(KC_LCTL); break;
-                case 8: ReleaseKeycode(KC_LALT); break;
-                case 9: ReleaseKeycode(KC_LALT); break;
-                case 10: ReleaseKeycode(KC_LCTL); break;
-                case 11: ReleaseKeycode(KC_LSFT); break;
-                case 12: ReleaseKeycode(KC_LGUI); break;
-                case 13: LayerOff(2); break;
-                case 14: LayerOff(3); break;
-                case 15: LayerOff(3); break;
-                case 16: LayerOff(2); break;
-                case 17: ReleaseKeycode(KC_LGUI); break;
-                case 18: ReleaseKeycode(KC_LSFT); break;
-                case 19: ReleaseKeycode(KC_LCTL); break;
-                case 20: ReleaseKeycode(KC_LALT); break;
-                case 21: ReleaseKeycode(KC_LALT); break;
-                case 22: ReleaseKeycode(KC_LCTL); break;
-                case 23: ReleaseKeycode(KC_LSFT); break;
-                case 24: ReleaseKeycode(KC_LGUI); break;
-                case 25: LayerOff(4); break;
-                case 26: LayerOff(4); break;
-                case 27: ReleaseKeycode(KC_LALT); break;
-                case 28: ReleaseKeycode(KC_LCTL); break;
-                case 29: ReleaseKeycode(KC_LSFT); break;
-                case 30: LayerOff(4); break;
-                case 31: LayerOff(4); break;
-                case 32: ReleaseKeycode(KC_LGUI); break;
-                case 33: ReleaseKeycode(KC_LSFT); break;
-                case 34: ReleaseKeycode(KC_LCTL); break;
-                case 35: ReleaseKeycode(KC_LALT); break;
-                case 36: ReleaseKeycode(KC_LALT); break;
-                case 37: ReleaseKeycode(KC_LCTL); break;
-                case 38: ReleaseKeycode(KC_LSFT); break;
-                case 39: ReleaseKeycode(KC_LGUI); break;
+                case 1: ReleaseTapDanceLT(2, KC_P, tdindex); break;
+                case 2: ReleaseTapDanceLT(3, KC_O, tdindex); break;
+                case 3: ReleaseTapDanceLT(3, KC_L, tdindex); break;
+                case 4: ReleaseTapDanceLT(2, KC_C, tdindex); break;
+                case 5: ReleaseTapDanceMT(KC_LGUI, KC_I, tdindex); break;
+                case 6: ReleaseTapDanceMT(KC_LSFT, KC_N, tdindex); break;
+                case 7: ReleaseTapDanceMT(KC_LCTL, KC_E, tdindex); break;
+                case 8: ReleaseTapDanceMT(KC_LALT, KC_A, tdindex); break;
+                case 9: ReleaseTapDanceMT(KC_LALT, KC_H, tdindex); break;
+                case 10: ReleaseTapDanceMT(KC_LCTL, KC_T, tdindex); break;
+                case 11: ReleaseTapDanceMT(KC_LSFT, KC_S, tdindex); break;
+                case 12: ReleaseTapDanceMT(KC_LGUI, KC_R, tdindex); break;
+                case 13: ReleaseTapDanceLT(2, KC_W, tdindex); break;
+                case 14: ReleaseTapDanceLT(3, KC_E, tdindex); break;
+                case 15: ReleaseTapDanceLT(3, KC_I, tdindex); break;
+                case 16: ReleaseTapDanceLT(2, KC_O, tdindex); break;
+                case 17: ReleaseTapDanceMT(KC_LGUI, KC_A, tdindex); break;
+                case 18: ReleaseTapDanceMT(KC_LSFT, KC_S, tdindex); break;
+                case 19: ReleaseTapDanceMT(KC_LCTL, KC_D, tdindex); break;
+                case 20: ReleaseTapDanceMT(KC_LALT, KC_F, tdindex); break;
+                case 21: ReleaseTapDanceMT(KC_LALT, KC_J, tdindex); break;
+                case 22: ReleaseTapDanceMT(KC_LCTL, KC_K, tdindex); break;
+                case 23: ReleaseTapDanceMT(KC_LSFT, KC_L, tdindex); break;
+                case 24: ReleaseTapDanceMT(KC_LGUI, KC_SCLN, tdindex); break;
+                case 25: ReleaseTapDanceLT(4, KC_UP, tdindex); break;
+                case 26: ReleaseTapDanceLT(4, KC_PGUP, tdindex); break;
+                case 27: ReleaseTapDanceMT(KC_LALT, KC_HOME, tdindex); break;
+                case 28: ReleaseTapDanceMT(KC_LCTL, KC_PGDN, tdindex); break;
+                case 29: ReleaseTapDanceMT(KC_LSFT, KC_END, tdindex); break;
+                case 30: ReleaseTapDanceLT(4, KC_MINS, tdindex); break;
+                case 31: ReleaseTapDanceLT(4, KC_LBRC, tdindex); break;
+                case 32: ReleaseTapDanceMT(KC_LGUI, KC_1, tdindex); break;
+                case 33: ReleaseTapDanceMT(KC_LSFT, KC_2, tdindex); break; 
+                case 34: ReleaseTapDanceMT(KC_LCTL, KC_3, tdindex); break;
+                case 35: ReleaseTapDanceMT(KC_LALT, KC_4, tdindex); break;
+                case 36: ReleaseTapDanceMT(KC_LALT, KC_7, tdindex); break;
+                case 37: ReleaseTapDanceMT(KC_LCTL, KC_8, tdindex); break;
+                case 38: ReleaseTapDanceMT(KC_LSFT, KC_9, tdindex); break;
+                case 39: ReleaseTapDanceMT(KC_LGUI, KC_0, tdindex); break;
                 default: break;
             }
-            CurrentTapDance.dance_index = -1;
-            CurrentTapDance.activated = false;
-            CurrentTapDance.count = 0;
-            CurrentTapDance.pressed = false;
-            CurrentTapDance.last_pressed = 0;
+            TapDanceTimer[tdindex] = 0;
+            TapDanceCounter[tdindex] = 0;
         }
-        CurrentTapDance.pressed = pressed;
+        TapDancePressed[tdindex] = pressed;
         return;
     }
     return;
 }
 
 void TapDanceTask(void) {
-    if (CurrentTapDance.dance_index == -1) {
-        return;
-    }
-
-    if (CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-        CurrentTapDance.activated = true;
+    for (int i=0; i<TAP_DANCE_NUMBER; ++i) {
+        if(TapDanceCounter[i]!=0 && (CurrentTime-TapDanceTimer[i])>=TAPPING_TERM) {
+            switch(i) {
+                case 1: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(2);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_P);
+                    }else {
+                        PressKeycode(KC_P);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_P);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 2: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(3);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_O);
+                    }else {
+                        PressKeycode(KC_O);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_O);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 3: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(3);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_L);
+                    }else {
+                        PressKeycode(KC_L);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_L);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 4: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(2);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_C);
+                    }else {
+                        PressKeycode(KC_C);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_C);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 5: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LGUI);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_I);
+                    }else {
+                        PressKeycode(KC_I);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_I);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 6: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LSFT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_N);
+                    }else {
+                        PressKeycode(KC_N);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_N);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 7: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LCTL);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_E);
+                    }else {
+                        PressKeycode(KC_E);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_E);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 8: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LALT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_SPC);
+                    }else {
+                        PressKeycode(KC_SPC);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_SPC);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 9: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LALT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_H);
+                    }else {
+                        PressKeycode(KC_H);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_H);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 10: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LCTL);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_T);
+                    }else {
+                        PressKeycode(KC_T);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_T);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 11: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LSFT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_S);
+                    }else {
+                        PressKeycode(KC_S);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_S);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 12: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LGUI);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_R);
+                    }else {
+                        PressKeycode(KC_R);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_R);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 13: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(2);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_W);
+                    }else {
+                        PressKeycode(KC_W);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_W);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 14: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(3);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_E);
+                    }else {
+                        PressKeycode(KC_E);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_E);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 15: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(3);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_I);
+                    }else {
+                        PressKeycode(KC_I);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_I);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 16: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(2);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_O);
+                    }else {
+                        PressKeycode(KC_O);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_O);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 17: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LGUI);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_A);
+                    }else {
+                        PressKeycode(KC_A);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_A);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 18: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LSFT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_S);
+                    }else {
+                        PressKeycode(KC_S);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_S);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 19: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LCTL);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_D);
+                    }else {
+                        PressKeycode(KC_D);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_D);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 20: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LALT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_F);
+                    }else {
+                        PressKeycode(KC_F);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_F);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 21: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LALT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_J);
+                    }else {
+                        PressKeycode(KC_J);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_J);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 22: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LCTL);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_K);
+                    }else {
+                        PressKeycode(KC_K);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_K);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 23: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LSFT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_L);
+                    }else {
+                        PressKeycode(KC_L);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_L);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 24: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LGUI);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_SCLN);
+                    }else {
+                        PressKeycode(KC_SCLN);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_SCLN);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 25: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(4);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_UP);
+                    }else {
+                        PressKeycode(KC_UP);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_UP);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 26: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(4);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_PGUP);
+                    }else {
+                        PressKeycode(KC_PGUP);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_PGUP);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 27: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_HOME);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_J);
+                    }else {
+                        PressKeycode(KC_J);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_J);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 28: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LCTL);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_PGDN);
+                    }else {
+                        PressKeycode(KC_PGDN);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_PGDN);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 29: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LSFT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_END);
+                    }else {
+                        PressKeycode(KC_END);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_END);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 30: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(4);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_MINS);
+                    }else {
+                        PressKeycode(KC_MINS);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_MINS);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 31: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        LayerOn(4);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_LBRC);
+                    }else {
+                        PressKeycode(KC_LBRC);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_LBRC);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 32: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LGUI);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_1);
+                    }else {
+                        PressKeycode(KC_1);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_1);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 33: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LSFT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_2);
+                    }else {
+                        PressKeycode(KC_2);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_2);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 34: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LCTL);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_3);
+                    }else {
+                        PressKeycode(KC_3);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_3);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 35: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LALT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_4);
+                    }else {
+                        PressKeycode(KC_4);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_4);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 36: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LALT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_7);
+                    }else {
+                        PressKeycode(KC_7);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_7);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 37: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LCTL);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_8);
+                    }else {
+                        PressKeycode(KC_8);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_8);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 38: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LSFT);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_9);
+                    }else {
+                        PressKeycode(KC_9);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_9);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                case 39: {
+                    if (TapDancePressed[i] && TapDanceCounter[i]==1) {
+                        PressKeycode(KC_LGUI);
+                    }else if(TapDanceCounter[i]>=2) {
+                        PressKeycode(KC_0);
+                    }else {
+                        PressKeycode(KC_0);
+                        KeycodeSend();
+                        HAL_Delay(TAP_DELAY);
+                        ReleaseKeycode(KC_0);
+                        KeycodeSend();
+                        TapDanceCounter[i] = 0;
+                        TapDanceTimer[i] = 0;
+                    }
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+        }
     }
 
     if (CurrentTapDance.activated) {
         // do tap dance things
-        switch(CurrentTapDance.dance_index) {
-            case 1: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(2);
-                }else {
-                    PressKeycode(KC_P);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_P);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 2: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(3);
-                }else {
-                    PressKeycode(KC_O);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_O);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 3: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(3);
-                }else {
-                    PressKeycode(KC_L);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_L);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 4: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(2);
-                }else {
-                    PressKeycode(KC_C);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_C);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 5: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LGUI);
-                }else {
-                    PressKeycode(KC_I);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_I);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 6: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LSFT);
-                }else {
-                    PressKeycode(KC_N);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_N);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 7: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LCTL);
-                }else {
-                    PressKeycode(KC_E);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_E);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 8: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LALT);
-                }else {
-                    PressKeycode(KC_SPC);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_SPC);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 9: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LALT);
-                }else {
-                    PressKeycode(KC_H);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_H);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 10: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LCTL);
-                }else {
-                    PressKeycode(KC_T);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_T);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 11: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LSFT);
-                }else {
-                    PressKeycode(KC_S);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_S);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 12: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LGUI);
-                }else {
-                    PressKeycode(KC_R);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_R);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 13: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(2);
-                }else {
-                    PressKeycode(KC_W);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_W);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 14: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(3);
-                }else {
-                    PressKeycode(KC_E);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_E);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 15: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(3);
-                }else {
-                    PressKeycode(KC_I);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_I);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 16: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(2);
-                }else {
-                    PressKeycode(KC_O);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_O);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 17: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LGUI);
-                }else {
-                    PressKeycode(KC_A);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_A);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 18: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LSFT);
-                }else {
-                    PressKeycode(KC_S);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_S);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 19: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LCTL);
-                }else {
-                    PressKeycode(KC_D);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_D);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 20: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LALT);
-                }else {
-                    PressKeycode(KC_F);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_F);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 21: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LALT);
-                }else {
-                    PressKeycode(KC_J);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_J);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 22: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LCTL);
-                }else {
-                    PressKeycode(KC_K);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_K);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 23: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LSFT);
-                }else {
-                    PressKeycode(KC_L);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_L);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 24: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LGUI);
-                }else {
-                    PressKeycode(KC_SCLN);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_SCLN);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 25: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(4);
-                }else {
-                    PressKeycode(KC_UP);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_UP);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 26: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(4);
-                }else {
-                    PressKeycode(KC_PGUP);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_PGUP);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 27: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_HOME);
-                }else {
-                    PressKeycode(KC_J);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_J);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 28: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LCTL);
-                }else {
-                    PressKeycode(KC_PGDN);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_PGDN);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 29: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LSFT);
-                }else {
-                    PressKeycode(KC_END);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_END);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 30: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(4);
-                }else {
-                    PressKeycode(KC_MINS);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_MINS);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 31: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    LayerOn(4);
-                }else {
-                    PressKeycode(KC_LBRC);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_LBRC);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 32: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LGUI);
-                }else {
-                    PressKeycode(KC_1);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_1);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 33: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LSFT);
-                }else {
-                    PressKeycode(KC_2);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_2);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 34: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LCTL);
-                }else {
-                    PressKeycode(KC_3);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_3);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 35: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LALT);
-                }else {
-                    PressKeycode(KC_4);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_4);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 36: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LALT);
-                }else {
-                    PressKeycode(KC_7);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_7);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 37: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LCTL);
-                }else {
-                    PressKeycode(KC_8);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_8);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 38: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LSFT);
-                }else {
-                    PressKeycode(KC_9);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_9);
-                    KeycodeSend();
-                }
-                break;
-            }
-            case 39: {
-                if (CurrentTapDance.pressed && CurrentTime-CurrentTapDance.last_pressed>TAPPING_TERM) {
-                    PressKeycode(KC_LGUI);
-                }else {
-                    PressKeycode(KC_0);
-                    KeycodeSend();
-                    HAL_Delay(TAP_DELAY);
-                    ReleaseKeycode(KC_0);
-                    KeycodeSend();
-                }
-                break;
-            }
-            default: {
-                break;
-            }
-        }
+        
         CurrentTapDance.dance_index = -1;
         CurrentTapDance.activated = false;
         CurrentTapDance.count = 0;
@@ -1377,7 +1531,7 @@ int main(void)
 
       	CurrentTime = HAL_GetTick();
 
-          if (CurrentTime - LastTimer >= 10000)
+          if (CurrentTime - LastScanrateTimer >= 10000)
           {
 
 
