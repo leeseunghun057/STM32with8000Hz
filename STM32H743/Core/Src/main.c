@@ -133,13 +133,7 @@ GPIO_PinState pinState;
 
 int Scanrate = 0; // GPIO 읽기 카운트
 
-uint32_t Timer = 0; // 경과 시간 (ms)
-
-uint32_t LastTimer = 0;
-
-GPIO_TypeDef *GPIO_ABC[PIN_NUMBER] = {GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD, GPIOD };
-
-int GPIO_Num[PIN_NUMBER] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_10, GPIO_PIN_11, GPIO_PIN_12, GPIO_PIN_13, GPIO_PIN_14, GPIO_PIN_15 };
+uint32_t LastScanrateTimer = 0;
 
 uint16_t Keycode[][KEY_NUMBER] = {
     {
@@ -175,21 +169,14 @@ uint16_t Keycode[][KEY_NUMBER] = {
 
 };
 
-int ModifierBit[8] = {BIT_LCTL, BIT_LSFT, BIT_LALT, BIT_LGUI, BIT_RCTL, BIT_RSFT, BIT_RALT, BIT_RGUI};
-
-uint8_t ModifierSum = 0b00000000;
-
 uint32_t LayerState = 1;
+int BaseLayer = 0;
 
 int FromWhichLayer[KEY_NUMBER] = { -1 };
 
-uint16_t TempKeycode = 0;
-
 char UART_message[100];
 
-uint32_t KeyTimer = 0;
-
-uint32_t DebounceTimer[128] = { 0 };
+uint32_t DebounceTimer[PIN_NUMBER] = { 0 };
 
 uint32_t gpioA_state = 0; // GPIOA의 모든 핀 상태
 uint32_t gpioB_state = 0; // GPIOB의 모든 핀 상태
@@ -553,6 +540,11 @@ int GetLayer(int SwitchIndex)
         --now;
     }
     LayerState|=1; //레이어0이 혹시나 꺼졌을 경우 레이어 확인때 자동으로 켜지게
+
+    if(now==0) {
+        now=BaseLayer;
+    }
+
     return now;
 }
 
@@ -1262,33 +1254,27 @@ void PressKeycode(uint16_t keycode)
         ComboTask();
     }
 
-    // // 탭댄스 중에 다른 키 입력이 들어왔을 때 선입력된 탭댄스 발동 후에 키 처리
-    // if (CurrentTapDance.dance_index!=-1 && ((!IS_TD(keycode))||(CurrentTapDance.dance_index!=TD_TO_INDEX(keycode)))) {
-    //     CurrentTapDance.activated = true;
-    //     TapDanceTask();
-    // }
-
 	if (IS_MOD(keycode))
 	{
-		ModifierSum = ModifierSum | ModifierBit[keycode - KC_MOD_MIN];
-		keyboardReport.MODIFIER = ModifierSum;
-
+		keyboardReport.MODIFIER = keyboardReport.MODIFIER | (1<<(keycode - KC_MOD_MIN));
 	}
 	else if (IS_FN(keycode) || IS_TD(keycode))
 	{
 
 		if ( IS_FN(keycode) )
 		{
-            LayerState|=(1<<FN_TO_LAYER_NUMBER(keycode));
+            LayerState|=(1<<FN_TO_LAYER(keycode));
 		}
 		else if ( IS_TD(keycode))
 		{
-			TapDance(TD_TO_INDEX(keycode), true/*pressed*/);
+			TapDance(TD_TO_INDEX(keycode), true);
 		}
 
 
 
-	}
+	}else if (IS_DF(keycode)){
+        BaseLayer=DF_TO_LAYER(keycode);
+    }
 	else
 	{
 		SetKeycode(keycode);
@@ -1322,24 +1308,20 @@ void ReleaseKeycode(uint16_t keycode)
 
     if (IS_MOD(keycode))
     {
-        ModifierSum = ModifierSum & ~(MOD_TO_BIT(keycode));
-        keyboardReport.MODIFIER = ModifierSum;
-
+        keyboardReport.MODIFIER = keyboardReport.MODIFIER & ~(MOD_TO_BIT(keycode));
     }
     else if (IS_FN(keycode))
     {
-        LayerState &= (~(1<<FN_TO_LAYER_NUMBER(keycode)));
+        LayerState &= (~(1<<FN_TO_LAYER(keycode)));
         LayerState |= 1; //레이어0은 항상 on
     }
     else if (IS_TD(keycode))
     {
-        TapDance(TD_TO_INDEX(keycode), false/*released*/);
+        TapDance(TD_TO_INDEX(keycode), false);
     }
     else
     {
-
         ResetKeycode(keycode);
-
     }
 
     return;
@@ -1399,7 +1381,7 @@ int main(void)
           {
 
 
-              LastTimer = HAL_GetTick();
+              LastScanrateTimer = HAL_GetTick();
               Scanrate = 0;
           }
 

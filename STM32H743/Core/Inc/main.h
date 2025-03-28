@@ -1446,13 +1446,13 @@ enum qk_keycode_defines {
 #define KC_DF_MIN 0x5200
 #define KC_DF_MAX 0x52FF
 #define FN(layernumber) (KC_FN_MIN+layernumber)
-#define FN_TO_LAYER_NUMBER(fnx) (fnx-KC_FN_MIN)
+#define FN_TO_LAYER(fnx) (fnx-KC_FN_MIN)
 #define IS_FN(keycode) ((keycode>=KC_FN_MIN)&&(keycode<=KC_FN_MAX))
 #define TD(index) (KC_TD_MIN+index)
 #define TD_TO_INDEX(tdx) (tdx-KC_TD_MIN)
 #define IS_TD(keycode) ((keycode>=KC_TD_MIN)&&(keycode<=KC_TD_MAX))
 #define DF(index) (KC_DF_MIN+index)
-#define DF_TO_INDEX(dfx) (dfx-KC_DF_MIN)
+#define DF_TO_LAYER(dfx) (dfx-KC_DF_MIN)
 #define IS_DF(keycode) ((keycode>=KC_DF_MIN)&&(keycode<=KC_DF_MAX))
 
 #define KC_TILD S(KC_GRAVE) // ~
